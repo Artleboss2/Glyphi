@@ -832,7 +832,7 @@ export interface UsageCloudState {
   conflicts: { recordId: string; provider: string; day: string | null; localTokens: number | null; cloudTokens: number | null }[];
 }
 /**
- * What the signed-in account has published on glyphi.app. `unknown` until a
+ * What the signed-in account has published on usageatlas.com. `unknown` until a
  * check succeeds, so a failed check never reads as "no profile".
  */
 export type CloudProfileStatus =
@@ -841,7 +841,7 @@ export type CloudProfileStatus =
   | { state: "missing" }
   | { state: "private" | "public"; handle: string };
 /**
- * The public 30-day token leaderboard on glyphi.app, trimmed to what the profile
+ * The public 30-day token leaderboard on usageatlas.com, trimmed to what the profile
  * page and prompt show. Fetched without an account.
  */
 export interface LeaderboardGlance {
