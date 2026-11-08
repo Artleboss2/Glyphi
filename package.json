@@ -1,0 +1,63 @@
+{
+  "name": "glyphi-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "check": "node --test tooling/*.test.mjs && turbo run lint typecheck test build",
+    "dev": "turbo run dev --env-mode=loose",
+    "lint": "turbo run lint",
+    "test": "node --test tooling/*.test.mjs && turbo run test",
+    "typecheck": "turbo run typecheck",
+    "generate:desktop-icons": "bun tooling/generate-desktop-icons.mjs && bun tooling/generate-app-marks.mjs",
+    "generate:app-marks": "bun tooling/generate-app-marks.mjs",
+    "discover": "bun build tooling/discover-provider.ts --target=node --outfile=.vite/tools/discover-provider.mjs && node .vite/tools/discover-provider.mjs",
+    "desktop:start": "turbo run dev --filter=@glyphi/desktop --env-mode=loose",
+    "desktop:lint": "turbo run lint --filter=@glyphi/desktop",
+    "desktop:typecheck": "turbo run typecheck --filter=@glyphi/desktop",
+    "desktop:build": "turbo run build --filter=@glyphi/desktop",
+    "desktop:test": "turbo run test --filter=@glyphi/desktop",
+    "desktop:package": "turbo run package --filter=@glyphi/desktop --env-mode=loose --",
+    "desktop:make": "turbo run make --filter=@glyphi/desktop --env-mode=loose --"
+  },
+  "engines": {
+    "bun": ">=1.3.14",
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "node-gyp": "13.0.1",
+    "png-to-ico": "3.0.2",
+    "pngjs": "7.0.0",
+    "turbo": "2.10.7",
+    "yazl": "3.3.1"
+  },
+  "trustedDependencies": [
+    "@zowe/secrets-for-zowe-sdk",
+    "electron-winstaller",
+    "fs-xattr",
+    "macos-alias"
+  ],
+  "overrides": {
+    "decode-uri-component": "0.5.1",
+    "brace-expansion": "5.0.11",
+    "fast-uri": "3.1.7",
+    "postcss": "8.5.31",
+    "sharp": "0.35.3",
+    "tar": "7.5.22",
+    "tmp": "0.2.7",
+    "vite": "8.2.4",
+    "zod": "4.6.7",
+    "@xmldom/xmldom": "0.9.12"
+  },
+  "patchedDependencies": {
+    "extract-zip@2.0.1": "patches/extract-zip@2.0.1.patch"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "author": "Arthur Godart",
+  "homepage": "https://github.com/Artleboss2/Glyphi"
+}
