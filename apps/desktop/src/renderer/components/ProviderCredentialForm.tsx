@@ -32,19 +32,19 @@ export function ProviderCredentialForm({ provider }: { provider: QuotaProviderId
     } catch { setSecret(""); setError("Could not save this connection. Check the credential and unlock your system keyring, then try again."); }
     finally { setBusy(false); }
   }
-  return <details className="atlas-provider-connection mx-3 mb-3" onToggle={event => {
+  return <details className="atlas-provider-connection" onToggle={event => {
     if (event.currentTarget.open && !loaded && !busy) void load();
     if (!event.currentTarget.open) setSecret("");
   }}>
-    <summary className="cursor-pointer py-2 text-xs">Connect {info.name}</summary>
-    <form className="grid gap-3 rounded-xl border border-border p-4" onSubmit={event => { event.preventDefault(); void save(false); }}>
+    <summary className="atlas-provider-connection__summary">Connect {info.name}</summary>
+    <form className="atlas-provider-connection__form grid gap-3" onSubmit={event => { event.preventDefault(); void save(false); }}>
       <p className="text-xs text-muted">{info.help} Reads current allowances and balances. Token and request history are unavailable.</p>
       <label className="grid gap-1 text-xs">{info.credential}
         <Input aria-label={`${info.name} ${info.credential}`} autoComplete="off" disabled={busy || !loaded} maxLength={16384}
           onChange={event => setSecret(event.target.value)} placeholder={configured ? "Saved securely. Enter a replacement." : info.credential} type="password" value={secret} />
       </label>
       {["kimi", "qoder", "zai"].includes(provider) ? <label className="grid gap-1 text-xs">Credential region
-        <select className="rounded-lg border border-border bg-surface p-2 text-foreground" disabled={busy} onChange={event => setRegion(event.target.value as "global" | "china")} value={region}>
+        <select className="atlas-select atlas-provider-connection__region" disabled={busy} onChange={event => setRegion(event.target.value as "global" | "china")} value={region}>
           <option value="global">{provider === "kimi" ? "International · kimi.ai" : provider === "zai" ? "Global · api.z.ai" : "Global · qoder.com"}</option>
           <option value="china">{provider === "kimi" ? "China · kimi.com" : provider === "zai" ? "China · open.bigmodel.cn" : "China · qoder.com.cn"}</option>
         </select>
