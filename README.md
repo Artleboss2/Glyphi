@@ -51,6 +51,10 @@ scans. There is no account requirement, no proxy, no certificate to install and 
   digest, Do Not Disturb and per-alert delivery rules.
 - **Five languages.** English, French, Spanish, Chinese and Hindi.
 
+## Screens
+
+![Today: total tokens, cost estimate and a capacity meter per tool](docs/screenshots/dashboard.png)
+
 ## Install
 
 Windows builds are published from this repository:
@@ -87,8 +91,10 @@ Providers that need a key or a session can be connected in **Settings → Source
 encrypted with the operating system's protected storage and are excluded from every export and cloud
 save.
 
-The exact locations, fields and limitations are documented in [docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md),
-[QUOTA_PROVIDERS.md](docs/QUOTA_PROVIDERS.md) and [DISCOVERY.md](docs/DISCOVERY.md).
+The full list — more than 320 tools, with what is read from each — is in
+[docs/PROVIDERS.md](docs/PROVIDERS.md). The exact locations, fields and limitations are documented in
+[docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md), [QUOTA_PROVIDERS.md](docs/QUOTA_PROVIDERS.md) and
+[DISCOVERY.md](docs/DISCOVERY.md).
 
 ## Privacy
 
