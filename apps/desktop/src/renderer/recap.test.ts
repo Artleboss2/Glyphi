@@ -88,16 +88,16 @@ describe("recap", () => {
   });
 
   it("links to the public profile, or to the website without one", () => {
-    expect(recapLink("ada_l")).toEqual({ url: "https://glyphi.app/@ada_l", label: "glyphi.app/@ada_l" });
-    expect(recapLink(null)).toEqual({ url: "https://glyphi.app", label: "glyphi.app" });
+    expect(recapLink("ada_l")).toEqual({ url: "https://usageatlas.com/@ada_l", label: "usageatlas.com/@ada_l" });
+    expect(recapLink(null)).toEqual({ url: "https://usageatlas.com", label: "usageatlas.com" });
 
     const recap = buildRecap(fixture, today, "week");
-    const x = new URL(xPostUrl(recap, "https://glyphi.app/@ada_l"));
+    const x = new URL(xPostUrl(recap, "https://usageatlas.com/@ada_l"));
     expect(x.origin + x.pathname).toBe("https://x.com/intent/post");
     expect(x.searchParams.get("text")).toBe(recapPostText(recap));
-    expect(x.searchParams.get("url")).toBe("https://glyphi.app/@ada_l");
-    const bluesky = new URL(blueskyPostUrl(recap, "https://glyphi.app"));
+    expect(x.searchParams.get("url")).toBe("https://usageatlas.com/@ada_l");
+    const bluesky = new URL(blueskyPostUrl(recap, "https://usageatlas.com"));
     expect(bluesky.origin + bluesky.pathname).toBe("https://bsky.app/intent/compose");
-    expect(bluesky.searchParams.get("text")).toBe(`${recapPostText(recap)}\nhttps://glyphi.app`);
+    expect(bluesky.searchParams.get("text")).toBe(`${recapPostText(recap)}\nhttps://usageatlas.com`);
   });
 });
