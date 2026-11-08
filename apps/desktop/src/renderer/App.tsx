@@ -21,6 +21,7 @@ import { useDesktopUpdates } from "./update-state";
 import { UpdateTag } from "./components/UpdateControls";
 import { I18nProvider, useI18n } from "./i18n";
 import { AppShell } from "./components/AppShell";
+import { BootEye } from "./components/BootEye";
 import { Attribution } from "./components/Attribution";
 import { DayDashboard } from "./components/DayDashboard";
 import type { HealthNotice } from "./components/Diagnostics";
@@ -40,6 +41,7 @@ import { providerConnection, reconnectSentence } from "./provider-connection";
 import { wantsProfilePrompt } from "./profile-promotion";
 import { useCloudAccount, useLeaderboard, useProfilePageVisited, useProfilePrompt } from "./profile-state";
 import { useWrappedNudge } from "./wrapped-nudge";
+import { currencyRate } from "../shared/currency-rates";
 import type { ReportPlan } from "../shared/report-plans";
 
 const ALERT_INBOX_KEY = "glyphi.alert-inbox.v1";
@@ -82,7 +84,6 @@ export function App(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
-  const [providerSaving, setProviderSaving] = useState<string | null>(null);
   const [aliasSaving, setAliasSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissedNotices, setDismissedNotices] = useState<string[]>([]);
@@ -185,7 +186,7 @@ export function App(): React.JSX.Element {
     if (!advanced) return;
     setCostDisplay({
       currency: advanced.currency,
-      rate: advanced.currencyRate,
+      rate: currencyRate(advanced.currency),
       taxPercent: advanced.taxPercent
     });
   }, [advanced]);
@@ -238,14 +239,11 @@ export function App(): React.JSX.Element {
   }
 
   async function setProviderEnabled(providerID: string, enabled: boolean): Promise<void> {
-    setProviderSaving(providerID);
     try {
       updateDashboard(await window.glyphi.setProviderEnabled(providerID, enabled));
       setError(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The provider setting could not be saved.");
-    } finally {
-      setProviderSaving(null);
     }
   }
 
@@ -410,6 +408,7 @@ export function App(): React.JSX.Element {
 
   return (
     <I18nProvider language={preferences?.language ?? "system"}>
+    <BootEye />
     <AppShell activityControl={!usageRoute ? activity : null} appMarkUrl={preferences && markUrls ? markUrls[preferences.appearance.mark] : null}
       engineStatus={engineStatus} previousRoute={previousRoute} noticeCount={notices.length} onNavigate={navigate}
       profileBadge={!profileVisited && cloud.status !== null && wantsProfilePrompt(cloud.status.profile)} route={route}
@@ -486,14 +485,11 @@ export function App(): React.JSX.Element {
           customBackgroundUrl={customBackgroundUrl}
           onChooseCustomBackground={chooseCustomBackground}
           onOpenExternal={openExternal}
-          onRefresh={refreshAll}
           markUrls={markUrls}
           onSetProviderEnabled={setProviderEnabled}
           onUpdate={updatePreferences}
           preferences={preferences}
-          providerSaving={providerSaving}
           providers={snapshot?.providers ?? []}
-          refreshing={refreshing}
           saving={saving}
           onShowWidget={() => window.glyphi.showWidget()}
           onHideWidget={() => window.glyphi.hideWidget()}
