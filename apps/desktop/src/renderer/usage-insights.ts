@@ -1,5 +1,6 @@
 import type { DashboardProvider, DashboardSnapshot, UsageBreakdown, UsageTotals } from "@glyphi/contracts";
 import { sumUsageTotals } from "./dashboard-model";
+import { prettyModelName } from "./model-names";
 import { inclusiveDayCount, type ProviderScope, providersForScope } from "./personal-analytics";
 import { formatHourOfDay } from "./time-format";
 
@@ -148,7 +149,7 @@ function modelMixOf(providers: DashboardProvider[], days?: { startDay: string; e
       const key = entry.label.trim().toLocaleLowerCase();
       const group = groups.get(key) ?? {
         id: entry.id,
-        label: entry.label,
+        label: prettyModelName(entry.label),
         byProvider: new Map<string, UsageTotals[]>()
       };
       const forProvider = group.byProvider.get(provider.id) ?? [];
