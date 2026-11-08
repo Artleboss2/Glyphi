@@ -155,7 +155,7 @@ const notifiedLogErrors = new Set<string>();
 const tokenAlertEvaluator = new TokenAlertEvaluator();
 const usageAlertDeliveryLog = new UsageAlertDeliveryLog();
 /** Includes the X and Bluesky composers for sharing a recap. */
-const allowedExternalHosts = new Set(["glyphi.app", "github.com", "x.com", "bsky.app"]);
+const allowedExternalHosts = new Set(["usageatlas.com", "github.com", "x.com", "bsky.app"]);
 const MAX_SHARE_IMAGE_LENGTH = 16 * 1024 * 1024;
 const PNG_DATA_URL = "data:image/png;base64,";
 const MAX_BACKGROUND_FILE_SIZE = 25 * 1024 * 1024;
