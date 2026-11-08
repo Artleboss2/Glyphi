@@ -307,7 +307,7 @@ export const fr: Messages = {
   "settings.data.costsDescription": "Chaque estimation est stockée en USD et convertie au moment de l'affichage.",
   "settings.data.currency": "Devise d'affichage",
   "settings.data.currencyDescription": "Tous les chiffres utilisent cette devise ; aucun appel de taux de change ne quitte la machine.",
-  "settings.data.rateDescription": "Unités de la devise d'affichage pour un dollar américain.",
+  "settings.data.rateDescription": "Appliqué automatiquement depuis la table de taux embarquée : aucune saisie, aucune requête réseau.",
   "settings.data.rate": "Taux pour 1 USD",
   "settings.data.taxDescription": "Ajouté à chaque estimation affichée pour coller à la facture réelle.",
   "settings.data.tax": "Taxes / frais",
