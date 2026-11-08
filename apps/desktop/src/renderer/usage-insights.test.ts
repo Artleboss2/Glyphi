@@ -12,7 +12,7 @@ describe("usage insights", () => {
     expect(insights.persona).toMatchObject({ kind: "morning", label: "Morning starter", share: 72 });
     expect(insights.peakHour).toBe(11);
     expect(insights.activeHours).toBe(3);
-    expect(insights.topModel).toMatchObject({ label: "gpt-5.6-sol", share: 100, totalTokens: 1800 });
+    expect(insights.topModel).toMatchObject({ label: "GPT-5.6 Sol", share: 100, totalTokens: 1800 });
     expect(insights.busiestWeekday).toMatchObject({ label: "Thursday", share: 60, totalTokens: 1080 });
     expect(insights.weekdays[3]?.hourBlocks[4]).toMatchObject({ hour: 8, totalTokens: 580, intensity: 4 });
   });
@@ -54,7 +54,7 @@ describe("usage insights", () => {
 
     const insights = buildUsageInsights(multiProviderSnapshot, "all");
 
-    expect(insights.topModel).toMatchObject({ label: "gpt-5.6-sol", totalTokens: 3600, share: 100 });
+    expect(insights.topModel).toMatchObject({ label: "GPT-5.6 Sol", totalTokens: 3600, share: 100 });
     expect(insights.topModel?.providerNames).toEqual(["Codex", "Codex secondary"]);
   });
 
@@ -75,7 +75,7 @@ describe("usage insights", () => {
     const before = buildModelMix(snapshot, "all", { endDay: "2026-07-15", startDay: "2026-07-15" });
 
     expect(firstDay.totalModelTokens).toBe(1080);
-    expect(firstDay.topModel).toMatchObject({ label: "gpt-5.6-sol", share: 100, totalTokens: 1080 });
+    expect(firstDay.topModel).toMatchObject({ label: "GPT-5.6 Sol", share: 100, totalTokens: 1080 });
     // The days together are the whole coverage, so they match the undated totals.
     expect(bothDays.totalModelTokens).toBe(buildModelMix(snapshot, "all").totalModelTokens);
     expect(before.models).toEqual([]);
