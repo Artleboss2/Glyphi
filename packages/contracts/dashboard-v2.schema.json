@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://glyphi.app/schemas/dashboard-v2.schema.json",
+  "$id": "https://usageatlas.com/schemas/dashboard-v2.schema.json",
   "title": "Glyphi dashboard snapshot v2",
   "type": "object",
   "additionalProperties": false,
