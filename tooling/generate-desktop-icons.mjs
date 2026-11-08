@@ -48,7 +48,9 @@ await mkdir(webPublicRoot, { recursive: true });
 
 const master = PNG.sync.read(await readFile(masterPath));
 if (master.width !== master.height) throw new Error("Glyphi application icon must be square");
-if (master.width < appPngSize) throw new Error(`Glyphi master must be at least ${appPngSize}px`);
+// The supplied artwork is 500 px square, so the 1024 px macOS representation is
+// the only size interpolated upwards; every other output is a reduction.
+if (master.width < 256) throw new Error("Glyphi master must be at least 256px");
 
 const appIcon = resample(master, appPngSize);
 
