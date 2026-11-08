@@ -54,7 +54,7 @@ describe("recap", () => {
     });
     expect(recap.days.map((day) => day.date)).toEqual(Array.from({ length: 7 }, (_, index) => shiftDay("2026-07-11", index)));
     expect(recap.busiest?.date).toBe("2026-07-16");
-    expect(recap.models[0]).toMatchObject({ label: "gpt-5.6-sol" });
+    expect(recap.models[0]).toMatchObject({ label: "GPT-5.6 Sol" });
     expect(recap.models.reduce((sum, model) => sum + model.share, 0)).toBeLessThanOrEqual(1);
   });
 
