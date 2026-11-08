@@ -34,6 +34,9 @@ export function SettingsProviders({
   const [busy, setBusy] = useState<string | null>(null);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [probes, setProbes] = useState<Record<string, ProbeState>>({});
+  const [scanning, setScanning] = useState(false);
+  /** null until a scan runs; -1 reports a failed scan. */
+  const [scanResult, setScanResult] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -90,6 +93,22 @@ export function SettingsProviders({
     }
   }
 
+  /** Walks the folders each catalog tool owns, then re-reads the directory so the
+   * "on this PC" badges reflect what the scan just proved. */
+  async function scan(): Promise<void> {
+    if (scanning) return;
+    setScanning(true);
+    try {
+      const installed = await window.glyphi.scanInstalledProviders();
+      setEntries(await window.glyphi.getProviderDirectory());
+      setScanResult(installed.length);
+    } catch {
+      setScanResult(-1);
+    } finally {
+      setScanning(false);
+    }
+  }
+
   async function probe(entry: ProviderDirectoryEntry): Promise<void> {
     if (probes[entry.name]?.busy) return;
     setProbes((current) => ({ ...current, [entry.name]: { busy: true, files: null, folders: 0 } }));
@@ -139,7 +158,26 @@ export function SettingsProviders({
               </button>
             ))}
           </div>
+          <Button
+            className="atlas-providers__scan"
+            isDisabled={scanning}
+            onPress={() => void scan()}
+            variant="outline"
+          >
+            <RefreshIcon className={`size-4${scanning ? " animate-spin" : ""}`} />
+            <span>{t(scanning ? "settings.discovery.scanning" : "settings.discovery.scan")}</span>
+          </Button>
         </div>
+
+        {scanResult !== null ? (
+          <p className="atlas-providers__note" role="status">
+            {scanResult < 0
+              ? t("settings.discovery.error")
+              : scanResult === 0
+                ? t("settings.discovery.installedNone")
+                : t("settings.discovery.installed", { count: scanResult })}
+          </p>
+        ) : null}
 
         <p className="atlas-providers__count" role="status">
           {t("settings.providers.count", { count: stats.total })}
