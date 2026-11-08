@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" width="3840" height="2160" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="lapis" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#0b1030"/>
+      <stop offset="0.55" stop-color="#16204f"/>
+      <stop offset="1" stop-color="#0a1330"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f0c878" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#f0c878" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="stars" width="320" height="320" patternUnits="userSpaceOnUse">
+      <g fill="#f2d59a" fill-opacity="0.5">
+        <circle cx="40" cy="60" r="3"/>
+        <circle cx="180" cy="40" r="2"/>
+        <circle cx="260" cy="150" r="3.5"/>
+        <circle cx="120" cy="230" r="2"/>
+        <circle cx="220" cy="280" r="2.5"/>
+      </g>
+    </pattern>
+    <pattern id="gold-bands" width="3840" height="180" patternUnits="userSpaceOnUse">
+      <path d="M0 90 H3840" stroke="#d9b273" stroke-opacity="0.12" stroke-width="2"/>
+      <path d="M0 24 L 3840 156" stroke="#d9b273" stroke-opacity="0.05" stroke-width="2"/>
+      <path d="M0 156 L 3840 24" stroke="#d9b273" stroke-opacity="0.05" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="3840" height="2160" fill="url(#lapis)"/>
+  <rect width="3840" height="2160" fill="url(#gold-bands)"/>
+  <rect width="3840" height="2160" fill="url(#stars)"/>
+  <circle cx="1180" cy="780" r="620" fill="url(#halo)"/>
+  <g fill="none" stroke="#e4c084" stroke-opacity="0.5" stroke-width="10" stroke-linecap="round">
+    <circle cx="1180" cy="780" r="150"/>
+    <path d="M1180 630 V 700"/>
+    <path d="M1030 780 H 950"/>
+  </g>
+  <g fill="none" stroke="#e4c084" stroke-opacity="0.32" stroke-width="6">
+    <path d="M1600 1500 H 3600"/>
+    <path d="M1600 1548 H 3600"/>
+  </g>
+</svg>
