@@ -1,5 +1,4 @@
 import { UpdateSettings } from "./UpdateControls";
-import { CloudSettings } from "./CloudSettings";
 import { SettingsData } from "./SettingsData";
 import { SettingsWidget } from "./SettingsWidget";
 import type { DashboardProvider } from "@glyphi/contracts";
@@ -24,7 +23,7 @@ import {
 } from "../../shared/desktop-api";
 import { REPOSITORY_URL } from "../../shared/repository";
 import { DESKTOP_VERSION } from "../../shared/version";
-import { CheckIcon, ExternalIcon, RefreshIcon } from "../icons";
+import { CheckIcon, ExternalIcon } from "../icons";
 import {
   ACCENT_TINT_VALUES,
   applyAppearance,
@@ -36,14 +35,10 @@ import {
 } from "../appearance";
 import { formatTokens } from "../number-format";
 import type { MessageKey } from "../i18n";
-import { providerConnection, type ProviderConnection } from "../provider-connection";
 import { BUILT_IN_WALLPAPERS } from "../wallpapers";
 import { ProviderLogo } from "./ProviderLogo";
-import { ProviderCredentialForm } from "./ProviderCredentialForm";
-import { ProviderDiscovery } from "./ProviderDiscovery";
 import { SettingsProviders } from "./SettingsProviders";
 import { useI18n } from "../i18n";
-import { isQuotaProvider } from "../../shared/quota-providers";
 import { LANGUAGES, LANGUAGE_LABELS } from "../../shared/languages";
 
 interface SettingsProps {
@@ -58,10 +53,7 @@ interface SettingsProps {
   onUpdate(patch: Partial<DesktopPreferences>): Promise<void>;
   onChooseCustomBackground(): Promise<void>;
   onOpenExternal(url: string): Promise<void>;
-  onRefresh(): Promise<void>;
   providers: DashboardProvider[];
-  providerSaving: string | null;
-  refreshing: boolean;
   onSetProviderEnabled(providerID: string, enabled: boolean): Promise<void>;
   /** PNG data URLs for the app marks, so the picker shows what the OS will show. */
   markUrls?: Record<AppMark, string> | null;
@@ -89,10 +81,7 @@ export function Settings({
   onUpdate,
   onChooseCustomBackground,
   onOpenExternal,
-  onRefresh,
   providers,
-  providerSaving,
-  refreshing,
   onSetProviderEnabled,
   markUrls = null,
   onShowWidget,
@@ -106,13 +95,6 @@ export function Settings({
 }: SettingsProps): React.JSX.Element {
   const { t } = useI18n();
   const [tab, setTab] = useState<SettingsTab>("general");
-  const sources = providers.map((provider) => ({
-    provider,
-    connection: providerConnection(provider),
-  }));
-  const needsReconnect = sources.some(
-    ({ connection }) => connection.needsAttention,
-  );
   const appearance = preferences?.appearance ?? DEFAULT_APPEARANCE;
   // The slider previews live, so the type scale is applied to the document at once
   // while the saved preference only follows once the drag settles. The draft holds
@@ -222,7 +204,6 @@ export function Settings({
           </div>
 
           <div className="mt-8 grid gap-5" hidden={tab !== "general"}>
-            <CloudSettings />
             <Card variant="transparent">
               <Card.Header>
                 <Card.Title>{t("settings.general.title")}</Card.Title>
@@ -289,69 +270,6 @@ export function Settings({
                 </label>
               </Card.Content>
             </Card>
-
-            <Card variant="transparent">
-              <Card.Header>
-                <Card.Title>{t("settings.sources.title")}</Card.Title>
-                <Card.Description>{t("settings.sources.description")}</Card.Description>
-              </Card.Header>
-              <Card.Content className="atlas-settings-list mt-2">
-                {sources.length ? (
-                  sources.map(({ provider, connection }) => (
-                    <div key={provider.id}>
-                    <SettingRow
-                      checked={provider.enabled}
-                      description={<ConnectionCopy connection={connection} />}
-                      disabled={providerSaving === provider.id}
-                      key={provider.id}
-                      label={provider.name}
-                      leading={
-                        <ProviderLogo
-                          compact
-                          providerID={provider.id}
-                          providerName={provider.name}
-                        />
-                      }
-                      onChange={(enabled) =>
-                        onSetProviderEnabled(provider.id, enabled)
-                      }
-                      status={
-                        connection.needsAttention || connection.state === "checking" ? (
-                          <span
-                            className="atlas-source-pill"
-                            data-connection={connection.state}
-                          >
-                            {connection.label}
-                          </span>
-                        ) : null
-                      }
-                    />
-                    {isQuotaProvider(provider.id) ? <ProviderCredentialForm provider={provider.id} /> : null}
-                    </div>
-                  ))
-                ) : (
-                  <p className="px-3 py-5 text-sm text-muted" role="status">
-                    {t(refreshing ? "settings.sources.checking" : "settings.sources.empty")}
-                  </p>
-                )}
-                {needsReconnect ? (
-                  <div className="atlas-source-recheck">
-                    <Button
-                      isPending={refreshing}
-                      onPress={() => void onRefresh()}
-                      variant="outline"
-                    >
-                      <span>{t("settings.sources.recheck")}</span>
-                      <RefreshIcon
-                        className={`size-4${refreshing ? " animate-spin" : ""}`}
-                      />
-                    </Button>
-                  </div>
-                ) : null}
-              </Card.Content>
-            </Card>
-
-            <ProviderDiscovery />
 
             <Card variant="transparent">
               <Card.Header>
@@ -1021,21 +939,3 @@ export function SettingRow({
   );
 }
 
-/** The state of a source in one line, with the reconnect step when there is one. */
-function ConnectionCopy({
-  connection,
-}: {
-  connection: ProviderConnection;
-}): React.JSX.Element {
-  return (
-    <>
-      {connection.summary}
-      {connection.action ? (
-        <span className="atlas-source-action"> {connection.action}</span>
-      ) : null}
-      {connection.command ? (
-        <code className="atlas-command">{connection.command}</code>
-      ) : null}
-    </>
-  );
-}
