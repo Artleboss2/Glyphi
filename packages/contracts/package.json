@@ -1,0 +1,32 @@
+{
+  "name": "@glyphi/contracts",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./dashboard-v2.schema.json": "./dashboard-v2.schema.json",
+    "./fixtures/dashboard-v2.json": "./fixtures/dashboard-v2.json",
+    "./fixtures/analytics/codex-session.json": "./fixtures/analytics/codex-session.json",
+    "./fixtures/analytics/claude-session.json": "./fixtures/analytics/claude-session.json",
+    "./fixtures/providers/claude-oauth-usage.json": "./fixtures/providers/claude-oauth-usage.json",
+    "./fixtures/providers/codex-oauth-usage.json": "./fixtures/providers/codex-oauth-usage.json",
+    "./fixtures/providers/cursor-usage-summary.json": "./fixtures/providers/cursor-usage-summary.json",
+    "./fixtures/providers/cursor-usage-events.json": "./fixtures/providers/cursor-usage-events.json",
+    "./usage": "./src/usage.ts",
+    "./usage-record-v1.schema.json": "./usage-record-v1.schema.json",
+    "./fixtures/usage-record-v1.json": "./fixtures/usage-record-v1.json",
+    "./statistics": "./src/statistics.ts"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "ajv-formats": "^3.0.1",
+    "ajv": "8.18.0"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0"
+}
