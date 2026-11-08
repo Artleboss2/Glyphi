@@ -18,7 +18,7 @@ describe("ModelMixCard", () => {
       />
     );
 
-    expect(html).toContain("gpt-5.6-sol");
+    expect(html).toContain("GPT-5.6 Sol");
     expect(html).toContain("atlas-provider-logo");
     expect(html).not.toContain("atlas-model-row__swatch");
   });
