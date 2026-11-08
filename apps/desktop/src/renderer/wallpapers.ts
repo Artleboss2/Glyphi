@@ -7,7 +7,11 @@ export interface BuiltInWallpaper {
 }
 
 const wallpaperLabels: Record<BuiltInBackgroundId, string> = {
-  desert: "Dunes"
+  desert: "Dunes",
+  nile: "Nile at dusk",
+  papyrus: "Papyrus",
+  lapis: "Lapis & gold",
+  aten: "Aten sunrise"
 };
 
 export const BUILT_IN_WALLPAPERS: BuiltInWallpaper[] = BUILT_IN_BACKGROUND_IDS.map((id) => ({
