@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    # Release jobs cover OS-specific tests and packaging on all supported targets.
+    name: Desktop (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: package.json
+      - run: bun ci
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+      - name: Audit shipped dependencies
+        # image-size: build-only, no upstream fix. extract-zip: patched and regression-tested
+        # by bun run test; version-only audits cannot recognize patches/extract-zip@2.0.1.patch.
+        # http-cache-semantics, braces: build-only (Electron Forge, Electron's downloader), no
+        # upstream fix.
+        run: >-
+          bun audit --audit-level=high
+          --ignore=GHSA-w3rx-r6r6-pgpr
+          --ignore=GHSA-5p2g-fcmc-qvqq
+          --ignore=GHSA-jmr9-qjv8-65gv
+          --ignore=GHSA-7pqw-9j4j-h8q3
+          --ignore=GHSA-ch52-4w7c-c8xp
+          --ignore=GHSA-vfj7-8cjw-p6xm
