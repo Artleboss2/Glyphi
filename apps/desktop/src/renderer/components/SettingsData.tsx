@@ -2,6 +2,7 @@ import { Button, Card } from "@heroui/react";
 import { useState } from "react";
 import type { AdvancedPreferences, DesktopPreferences, ModelCostOverride } from "../../shared/desktop-api";
 import { CURRENCY_CODES, EXPORT_SCHEDULES, RETENTION_CHOICES } from "../../shared/desktop-api";
+import { currencyRate, RATE_TABLE_DATE } from "../../shared/currency-rates";
 import { useI18n } from "../i18n";
 import { SettingRow } from "./Settings";
 
@@ -87,13 +88,16 @@ export function SettingsData({
               {CURRENCY_CODES.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
             </select>
           </label>
-          <NumberRow
-            description={t("settings.data.rateDescription")}
-            label={t("settings.data.rate")}
-            onCommit={(value) => void updateAdvanced({ currencyRate: value })}
-            step={0.01}
-            value={advanced.currencyRate}
-          />
+          <div className="atlas-setting-row flex min-h-20 flex-wrap items-center gap-4 p-3">
+            <span className="min-w-0 flex-1">
+              <strong className="text-sm font-medium text-foreground">{t("settings.data.rate")}</strong>
+              <span className="mt-1 block text-xs text-muted">{t("settings.data.rateDescription")}</span>
+            </span>
+            <span className="text-sm tabular-nums text-muted" role="status">
+              1 USD = {currencyRate(advanced.currency)} {advanced.currency}
+              <span className="ms-2 text-xs">{RATE_TABLE_DATE}</span>
+            </span>
+          </div>
           <NumberRow
             description={t("settings.data.taxDescription")}
             label={t("settings.data.tax")}
