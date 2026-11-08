@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" width="3840" height="2160" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a1a24"/>
+      <stop offset="0.55" stop-color="#11323e"/>
+      <stop offset="1" stop-color="#1d5059"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f2d29a" stop-opacity="0.9"/>
+      <stop offset="0.55" stop-color="#e0a860" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#e0a860" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a6b72" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#071219" stop-opacity="0.95"/>
+    </linearGradient>
+    <pattern id="ripple" width="3840" height="54" patternUnits="userSpaceOnUse">
+      <path d="M0 27 Q 480 9 960 27 T 1920 27 T 2880 27 T 3840 27" fill="none" stroke="#d9b277" stroke-opacity="0.12" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="3840" height="2160" fill="url(#sky)"/>
+  <circle cx="2790" cy="640" r="760" fill="url(#sun)"/>
+  <circle cx="2790" cy="640" r="150" fill="#f6dfb3" fill-opacity="0.55"/>
+  <rect y="1180" width="3840" height="980" fill="url(#water)"/>
+  <rect y="1180" width="3840" height="980" fill="url(#ripple)"/>
+  <path d="M0 1180 H3840" stroke="#e6c288" stroke-opacity="0.35" stroke-width="3"/>
+  <path d="M980 1180 L1260 760 L1540 1180 Z" fill="#0b1b22" fill-opacity="0.55"/>
+  <path d="M1500 1180 L1720 880 L1940 1180 Z" fill="#0b1b22" fill-opacity="0.4"/>
+</svg>
