@@ -111,7 +111,7 @@ export interface AppearancePreferences {
 
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
   theme: "system",
-  font: "cinzel",
+  font: "cormorant",
   fontScale: 1,
   textColor: null,
   mark: "glyph",
@@ -316,9 +316,8 @@ export interface AdvancedPreferences {
   trayMetric: TrayMetric;
   /** Soft monthly budget used by the mini window gauge; 0 turns the gauge off. */
   monthlyBudgetUSD: number;
+  /** Display currency; the exchange rate comes from the bundled table. */
   currency: CurrencyCode;
-  /** Display-currency units per USD, fixed by the user so figures never jump. */
-  currencyRate: number;
   /** Added to displayed estimates, 0–100. */
   taxPercent: number;
   /**
@@ -362,7 +361,6 @@ export const DEFAULT_ADVANCED_PREFERENCES: AdvancedPreferences = {
   trayMetric: "remaining",
   monthlyBudgetUSD: 0,
   currency: "USD",
-  currencyRate: 1,
   taxPercent: 0,
   blendedCostEnabled: true,
   // The published leaderboard sits near $0.54 per million tokens; use that as
@@ -442,7 +440,6 @@ export function sanitizeAdvancedPreferences(value: unknown): AdvancedPreferences
     monthlyBudgetUSD: boundedNumber(record.monthlyBudgetUSD, DEFAULT_ADVANCED_PREFERENCES.monthlyBudgetUSD, 0, 1_000_000),
     currency: typeof record.currency === "string" && currencyCodeSet.has(record.currency)
       ? record.currency as CurrencyCode : DEFAULT_ADVANCED_PREFERENCES.currency,
-    currencyRate: boundedNumber(record.currencyRate, DEFAULT_ADVANCED_PREFERENCES.currencyRate, 0.01, 10_000),
     taxPercent: boundedNumber(record.taxPercent, DEFAULT_ADVANCED_PREFERENCES.taxPercent, 0, 100),
     blendedCostEnabled: typeof record.blendedCostEnabled === "boolean"
       ? record.blendedCostEnabled : DEFAULT_ADVANCED_PREFERENCES.blendedCostEnabled,
@@ -477,7 +474,7 @@ export function sanitizeAdvancedPreferences(value: unknown): AdvancedPreferences
   };
 }
 
-export const BUILT_IN_BACKGROUND_IDS = ["desert"] as const;
+export const BUILT_IN_BACKGROUND_IDS = ["desert", "nile", "papyrus", "lapis", "aten"] as const;
 export type BuiltInBackgroundId = (typeof BUILT_IN_BACKGROUND_IDS)[number];
 export type BackgroundImagePreference = BuiltInBackgroundId | "custom";
 export const DEFAULT_BACKGROUND_IMAGE: BuiltInBackgroundId = "desert";
