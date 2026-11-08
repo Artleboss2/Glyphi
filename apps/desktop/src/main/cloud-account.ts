@@ -1,0 +1,365 @@
+import { app, safeStorage, shell } from "electron";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  renameSync,
+  unlinkSync,
+} from "node:fs";
+import path from "node:path";
+import type { EngineManager } from "./engine-manager";
+import type { CloudProfileStatus, CloudStatus, UsageCloudState } from "../shared/desktop-api";
+import { CLOUD_URL as BASE_URL } from "./cloud-url";
+
+export type KnownProfileStatus = Extract<CloudProfileStatus, { state: "missing" | "private" | "public" }>;
+
+const PROFILE_HANDLE = /^[a-z0-9][a-z0-9_]{2,29}$/u;
+interface Session {
+  token: string;
+  user: { id: string; email: string };
+}
+interface DeviceLogin {
+  deviceCode: string;
+  userCode: string;
+  expires: number;
+  interval: number;
+}
+
+export class CloudAccount {
+  private session: Session | null = null;
+  private login: DeviceLogin | null = null;
+  private loginAttempt: object | null = null;
+  private timer: NodeJS.Timeout | null = null;
+  private error: string | null = null;
+  private profile: { accountId: string; status: KnownProfileStatus } | null = null;
+  private profileCheck: { session: Session; done: Promise<void> } | null = null;
+  private readonly filename = path.join(
+    app.getPath("userData"),
+    "cloud-session.enc",
+  );
+  constructor(
+    private readonly engine: EngineManager,
+    private readonly configureEngine: (
+      accountId: string, operation: () => Promise<unknown>, reconnect: boolean
+    ) => Promise<unknown> = (_accountId, operation) => operation(),
+    private readonly onProfile: (accountId: string, profile: KnownProfileStatus) => void = () => undefined,
+  ) {}
+  async initialize(): Promise<void> {
+    try {
+      if (existsSync(this.filename) && safeStorage.isEncryptionAvailable()) {
+        const value = JSON.parse(
+          safeStorage.decryptString(readFileSync(this.filename)),
+        ) as Session;
+        if (
+          typeof value.token === "string" &&
+          typeof value.user?.id === "string" &&
+          typeof value.user.email === "string"
+        )
+          this.session = value;
+      }
+    } catch {
+      this.error = "Your saved sign-in could not be opened. Sign in again.";
+    }
+    await this.configure();
+  }
+  async status(): Promise<CloudStatus> {
+    const state = (await this.engine.cloud({
+      operation: "status",
+    })) as unknown as UsageCloudState;
+    const account = this.session?.user ?? null;
+    if (state.accountId !== (account?.id ?? null)) {
+      return {
+        accountId: null, account: null, automatic: false, pending: 0,
+        busy: this.error === null, progress: null, lastCompleted: null,
+        heldBack: [], heldBackCount: 0, conflicts: [], loginCode: this.login?.userCode ?? null,
+        error: this.error, profile: { state: "unknown" },
+      };
+    }
+    return {
+      ...state,
+      account,
+      loginCode: this.login?.userCode ?? null,
+      error: this.error ?? state.error,
+      profile: this.profileStatus(),
+    };
+  }
+  profileStatus(): CloudProfileStatus {
+    if (!this.session) return { state: "signed-out" };
+    return this.profile?.accountId === this.session.user.id ? this.profile.status : { state: "unknown" };
+  }
+  /** Asks the website whether the signed-in account has a profile. Failures keep the last answer. */
+  refreshProfile(): Promise<void> {
+    const session = this.session;
+    if (!session) return Promise.resolve();
+    if (this.profileCheck?.session !== session) {
+      const done = (async () => {
+        try {
+          const value = await this.request("/api/desktop/profile", undefined, session.token);
+          const profile = parseProfile(value.profile);
+          if (this.session !== session) return;
+          this.profile = { accountId: session.user.id, status: profile };
+          this.onProfile(session.user.id, profile);
+        } catch { /* An unknown profile never counts as missing. */ }
+      })().finally(() => { if (this.profileCheck?.done === done) this.profileCheck = null; });
+      this.profileCheck = { session, done };
+    }
+    return this.profileCheck.done;
+  }
+  /**
+   * Whether the handle looks free. Needs no account, so a signed-out user can choose first,
+   * but then only public profiles count; signed in, private ones count too, as saving would.
+   */
+  async handleAvailable(handle: string): Promise<boolean> {
+    if (!PROFILE_HANDLE.test(handle)) throw new Error("Invalid handle.");
+    const value = await this.request(`/api/handles/${handle}`, undefined, this.session?.token);
+    if (typeof value.available !== "boolean") throw new Error("Invalid handle response.");
+    return value.available;
+  }
+  async signIn(): Promise<void> {
+    if (this.login || this.loginAttempt) return;
+    const url = new URL(BASE_URL);
+    if (
+      url.protocol !== "https:" &&
+      !(
+        url.protocol === "http:" &&
+        ["localhost", "127.0.0.1"].includes(url.hostname)
+      )
+    )
+      throw new Error("Cloud sign-in requires HTTPS.");
+    if (
+      !safeStorage.isEncryptionAvailable() ||
+      (process.platform === "linux" &&
+        safeStorage.getSelectedStorageBackend() === "basic_text")
+    )
+      throw new Error(
+        "Unlock your system keyring to save your sign-in securely.",
+      );
+    this.error = null;
+    const attempt = {};
+    this.loginAttempt = attempt;
+    try {
+      const response = await this.request("/api/auth/device/code", {
+        client_id: "glyphi-desktop",
+      });
+      if (this.loginAttempt !== attempt) return;
+      if (
+        typeof response.device_code !== "string" ||
+        !response.device_code ||
+        typeof response.user_code !== "string" ||
+        !response.user_code ||
+        typeof response.expires_in !== "number" ||
+        !Number.isFinite(response.expires_in) ||
+        response.expires_in <= 0 ||
+        typeof response.interval !== "number" ||
+        !Number.isFinite(response.interval) ||
+        response.interval <= 0
+      )
+        throw new Error("Invalid sign-in response.");
+      this.login = {
+        deviceCode: response.device_code,
+        userCode: response.user_code,
+        expires: Date.now() + Math.min(response.expires_in, 600) * 1000,
+        interval: Math.max(5, response.interval) * 1000,
+      };
+      try {
+        await shell.openExternal(
+          `${BASE_URL}/account/device?user_code=${encodeURIComponent(this.login.userCode)}`,
+        );
+      } catch {
+        throw new Error("Couldn't open your browser. Try signing in again.");
+      }
+      if (this.loginAttempt !== attempt) return;
+      this.schedulePoll();
+    } catch (error) {
+      if (this.loginAttempt !== attempt) return;
+      this.cancelLogin();
+      throw error;
+    } finally {
+      if (this.loginAttempt === attempt) this.loginAttempt = null;
+    }
+  }
+
+  async signOut(): Promise<void> {
+    this.cancelLogin();
+    const session = this.session;
+    this.session = null;
+    this.error = null;
+    let removalError: Error | null = null;
+    try {
+      if (existsSync(this.filename)) unlinkSync(this.filename);
+    } catch {
+      removalError = new Error("The saved sign-in could not be removed. Close other Glyphi windows and try signing out again.");
+    }
+    // A locked session file must not leave automatic cloud saves connected.
+    try {
+      await this.configure();
+    } catch (error) {
+      this.error = error instanceof Error ? error.message : "Could not disconnect cloud sync. Close Glyphi and try again.";
+      throw error;
+    } finally {
+      if (session)
+        await this.request("/api/auth/sign-out", {}, session.token).catch(() => undefined);
+    }
+    if (removalError) {
+      this.error = removalError.message;
+      throw removalError;
+    }
+  }
+  async operation(
+    operation: "save" | "restore" | "automatic" | "resolve",
+    values: {
+      enabled?: boolean;
+      recordId?: string;
+      choice?: "local" | "cloud";
+    } = {},
+  ): Promise<void> {
+    if (!this.session) throw new Error("Sign in first.");
+    this.error = null;
+    await this.engine.cloud({ operation, ...values });
+  }
+  close(): void {
+    this.cancelLogin();
+  }
+  async reconnect(): Promise<void> {
+    await this.configure(true);
+  }
+  private configure(reconnect = false): Promise<unknown> {
+    const params = {
+      operation: "configure",
+      accountId: this.session?.user.id ?? "",
+      token: this.session?.token ?? "",
+      baseURL: BASE_URL,
+    };
+    return this.configureEngine(params.accountId, () => this.engine.cloud(params), reconnect);
+  }
+  private schedulePoll(): void {
+    if (!this.login) return;
+    this.timer = setTimeout(() => void this.poll(), this.login.interval);
+    this.timer.unref();
+  }
+  private async poll(): Promise<void> {
+    const login = this.login;
+    if (!login) return;
+    try {
+      if (Date.now() >= login.expires)
+        throw new Error("Sign-in expired. Try again.");
+      const response = await this.request("/api/auth/device/token", {
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        device_code: login.deviceCode,
+        client_id: "glyphi-desktop",
+      });
+      if (this.login !== login) return;
+      if (
+        response.error === "authorization_pending" ||
+        response.error === "slow_down"
+      ) {
+        if (response.error === "slow_down") login.interval += 5000;
+        this.schedulePoll();
+        return;
+      }
+      if (typeof response.access_token !== "string")
+        throw new Error("Sign-in was not approved. Try again.");
+      const data = await this.request(
+        "/api/auth/get-session",
+        undefined,
+        response.access_token,
+      );
+      if (this.login !== login) return;
+      const user = data.user as { id?: unknown; email?: unknown } | undefined;
+      if (typeof user?.id !== "string" || typeof user.email !== "string")
+        throw new Error("Could not verify your account.");
+      const session: Session = {
+        token: response.access_token,
+        user: { id: user.id, email: user.email },
+      };
+      writeFileSync(
+        `${this.filename}.tmp`,
+        safeStorage.encryptString(JSON.stringify(session)),
+        {
+          mode: 0o600,
+        },
+      );
+      renameSync(`${this.filename}.tmp`, this.filename);
+      this.session = session;
+      await this.configure();
+      if (this.login !== login) return;
+      this.cancelLogin();
+      void this.refreshProfile();
+    } catch (error) {
+      if (this.login !== login) return;
+      this.error = error instanceof Error ? error.message : "Sign-in failed.";
+      this.cancelLogin();
+    }
+  }
+  private cancelLogin(): void {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    this.login = null;
+    this.loginAttempt = null;
+  }
+  private async request(
+    endpoint: string,
+    body?: unknown,
+    token?: string,
+  ): Promise<Record<string, unknown>> {
+    let response: Response;
+    try {
+      response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: body ? "POST" : "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(20_000),
+        redirect: "error",
+      });
+    } catch {
+      throw new Error(
+        "Could not reach Glyphi. Check your connection and try again.",
+      );
+    }
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Empty account response.");
+    const decoder = new TextDecoder();
+    let text = "";
+    let size = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 65_536) {
+        await reader.cancel();
+        throw new Error("Invalid account response.");
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    const value = JSON.parse(text) as Record<string, unknown>;
+    if (!value || typeof value !== "object")
+      throw new Error("Invalid account response.");
+    if (value.error === "expired_token")
+      throw new Error("Sign-in expired. Try again.");
+    if (value.error === "access_denied")
+      throw new Error("Sign-in was cancelled in your browser.");
+    if (
+      !response.ok &&
+      !["authorization_pending", "slow_down"].includes(String(value.error))
+    )
+      throw new Error(
+        response.status === 503
+          ? "Cloud accounts are not configured yet."
+          : "Account request failed. Try again.",
+      );
+    return value;
+  }
+}
+
+function parseProfile(value: unknown): KnownProfileStatus {
+  if (value === null) return { state: "missing" };
+  if (value && typeof value === "object" && "handle" in value && "isPublic" in value
+    && typeof value.handle === "string" && PROFILE_HANDLE.test(value.handle)
+    && typeof value.isPublic === "boolean")
+    return { state: value.isPublic ? "public" : "private", handle: value.handle };
+  throw new Error("Invalid profile response.");
+}
