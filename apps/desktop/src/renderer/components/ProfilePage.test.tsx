@@ -207,7 +207,7 @@ describe("Profile page", () => {
 
     expect(html).toContain("@yourname");
     expect(html).toContain("Longest streak");
-    expect(html).toContain("gpt-5.6-sol");
+    expect(html).toContain("GPT-5.6 Sol");
   });
 });
 
