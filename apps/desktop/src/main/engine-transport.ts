@@ -1,0 +1,18 @@
+import type { EngineImportMessage, EngineProgressMessage, EngineRequest, EngineResponse } from "../engine/protocol";
+
+export interface EngineTransportHandlers {
+  message(response: EngineResponse): void;
+  progress?(progress: EngineProgressMessage): void;
+  historyChanged?(): void;
+  importProgress?(message: EngineImportMessage): void;
+  diagnostic(message: string): void;
+  exit(code: number): void;
+}
+
+export interface EngineTransport {
+  start(handlers: EngineTransportHandlers): Promise<void>;
+  send(request: EngineRequest): void;
+  kill(): void;
+}
+
+export type EngineTransportFactory = () => EngineTransport;
