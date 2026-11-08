@@ -309,7 +309,7 @@ export const en = {
   "settings.data.costsDescription": "Every estimate is stored in USD and converted when it is shown.",
   "settings.data.currency": "Display currency",
   "settings.data.currencyDescription": "Figures use this currency everywhere; no exchange-rate lookup leaves the machine.",
-  "settings.data.rateDescription": "Units of the display currency per US dollar.",
+  "settings.data.rateDescription": "Applied automatically from the rate table bundled with the app; it never leaves this machine.",
   "settings.data.rate": "Rate per USD",
   "settings.data.taxDescription": "Added to every displayed estimate to reflect a real invoice.",
   "settings.data.tax": "Tax / fees",
