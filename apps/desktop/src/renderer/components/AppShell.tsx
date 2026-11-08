@@ -245,8 +245,12 @@ function WindowControls(): React.JSX.Element | null {
         onClick={() => void window.glyphi.minimizeWindow()}
         type="button"
       >
-        <svg aria-hidden="true" viewBox="0 0 12 12">
-          <line x1="2" x2="10" y1="6" y2="6" />
+        {/* A sun sinking behind the horizon, drawn as one flat line with two
+            short posts — the same silhouette as the glyphs in the icon set. */}
+        <svg aria-hidden="true" viewBox="0 0 14 14">
+          <path d="M3 9.5h8" />
+          <path d="M4.6 9.5a2.4 2.4 0 0 1 4.8 0" />
+          <path d="M2.6 9.5v1.8M11.4 9.5v1.8" />
         </svg>
       </button>
       <button
@@ -256,13 +260,15 @@ function WindowControls(): React.JSX.Element | null {
         type="button"
       >
         {maximized ? (
-          <svg aria-hidden="true" viewBox="0 0 12 12">
-            <rect height="6.5" width="6.5" x="3.5" y="2.5" />
-            <path d="M2.5 5.5v4h6.5" />
+          <svg aria-hidden="true" viewBox="0 0 14 14">
+            <path d="M4.6 10.4V6.2h4.2v4.2z" />
+            <path d="M6.4 4.2V3h4.4v4.4h-1.2" />
           </svg>
         ) : (
-          <svg aria-hidden="true" viewBox="0 0 12 12">
-            <rect height="7" width="7" x="2.5" y="2.5" />
+          /* Pylon: a plain frame capped by a shallow pyramid. */
+          <svg aria-hidden="true" viewBox="0 0 14 14">
+            <path d="M3.4 5.4h7.2v6H3.4z" />
+            <path d="M3 5.4 7 1.8l4 3.6" />
           </svg>
         )}
       </button>
@@ -272,8 +278,10 @@ function WindowControls(): React.JSX.Element | null {
         onClick={() => void window.glyphi.closeWindow()}
         type="button"
       >
-        <svg aria-hidden="true" viewBox="0 0 12 12">
-          <path d="M3 3l6 6M9 3l-6 6" />
+        {/* Crossed reeds: an X whose four tips open like papyrus stems. */}
+        <svg aria-hidden="true" viewBox="0 0 14 14">
+          <path d="M4 4l6 6M10 4l-6 6" />
+          <path d="M3 3l2 .6-.6 2M11 3l-2 .6.6 2M3 11l2-.6-.6-2M11 11l-2 .6.6-2" />
         </svg>
       </button>
     </div>
