@@ -3,20 +3,31 @@
 @import "./components/usage-primitives.css";
 
 @theme {
-  --font-sans: "Cinzel Variable", Cinzel, Georgia, "Times New Roman", serif;
+  /* Running text stays on the platform UI face: a display serif applied to every
+     label, number and paragraph reads as decoration and hurts legibility. */
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Noto Sans", Arial, sans-serif;
 }
 
-/* Bundled families, selected from Settings → Appearance. */
+/* The Settings → Appearance family is the display voice: page titles and big
+   display figures only, so the Egyptian flavour is an accent, not the body. */
+:root {
+  --font-display: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+}
+
+html[data-appearance-font="system"] {
+  --font-display: var(--font-sans);
+}
+
 html[data-appearance-font="cinzel"] {
-  --font-sans: "Cinzel Variable", Cinzel, Georgia, "Times New Roman", serif;
+  --font-display: "Cinzel Variable", Cinzel, Georgia, "Times New Roman", serif;
 }
 
 html[data-appearance-font="marcellus"] {
-  --font-sans: Marcellus, Georgia, "Times New Roman", serif;
+  --font-display: Marcellus, Georgia, "Times New Roman", serif;
 }
 
 html[data-appearance-font="cormorant"] {
-  --font-sans: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-display: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, "Times New Roman", serif;
 }
 
 /* Dither Kit chrome (axes, tooltip) is written against shadcn token names that
@@ -78,7 +89,7 @@ html[data-appearance-font="cormorant"] {
   --atlas-image-outline: oklch(0 0 0 / 0.1);
   --atlas-shell: rgba(255, 255, 255, 0.32);
   --atlas-sidebar: rgba(255, 255, 255, 0.45);
-  --atlas-card: rgba(255, 255, 255, 0.55);
+  --atlas-card: rgba(255, 255, 255, 0.68);
   --atlas-material-thin: rgba(255, 255, 255, 0.4);
   --atlas-material-thick: rgba(255, 255, 255, 0.6);
   --atlas-knob: #ffffff;
@@ -130,7 +141,7 @@ html[data-appearance-font="cormorant"] {
     --atlas-image-outline: oklch(1 0 0 / 0.1);
     --atlas-shell: oklch(0 0 0 / 0.05);
     --atlas-sidebar: oklch(0 0 0 / 0.12);
-    --atlas-card: oklch(0 0 0 / 0.09);
+    --atlas-card: oklch(0 0 0 / 0.2);
     --atlas-material-thin: oklch(0 0 0 / 0.08);
     --atlas-material-thick: oklch(0 0 0 / 0.16);
     --atlas-knob: #636366;
@@ -183,7 +194,7 @@ html[data-appearance-font="cormorant"] {
   --atlas-image-outline: oklch(1 0 0 / 0.1);
   --atlas-shell: oklch(0 0 0 / 0.05);
   --atlas-sidebar: oklch(0 0 0 / 0.12);
-  --atlas-card: oklch(0 0 0 / 0.09);
+  --atlas-card: oklch(0 0 0 / 0.2);
   --atlas-material-thin: oklch(0 0 0 / 0.08);
   --atlas-material-thick: oklch(0 0 0 / 0.16);
   --atlas-knob: #636366;
@@ -267,8 +278,26 @@ html[data-appearance-font="cormorant"] {
     animation-play-state: paused !important;
   }
 
+  /* Every built-in scene is a vector file: crisp on a 4K panel, tiny to ship,
+     and no image decoding work while the app idles in the tray. */
   body[data-wallpaper="desert"] {
     --atlas-wallpaper-image: url("./assets/wallpaper-desert.jpg");
+  }
+
+  body[data-wallpaper="nile"] {
+    --atlas-wallpaper-image: url("./assets/wallpaper-nile.svg");
+  }
+
+  body[data-wallpaper="papyrus"] {
+    --atlas-wallpaper-image: url("./assets/wallpaper-papyrus.svg");
+  }
+
+  body[data-wallpaper="lapis"] {
+    --atlas-wallpaper-image: url("./assets/wallpaper-lapis.svg");
+  }
+
+  body[data-wallpaper="aten"] {
+    --atlas-wallpaper-image: url("./assets/wallpaper-aten.svg");
   }
 
   #root {
@@ -363,19 +392,23 @@ html[data-appearance-font="cormorant"] {
   padding-inline-end: 2px;
 }
 
+/* Cartouche-shaped window buttons: a narrow pill with a hairline ring, the
+   shape of the carved name-rings, instead of the stock circular controls. */
 .atlas-window-controls__button {
   display: grid;
   width: 30px;
   height: 30px;
   place-items: center;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px / 44%;
   background: transparent;
   color: var(--muted);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--foreground) 7%, transparent);
   cursor: pointer;
   transition:
     background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
     color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -390,7 +423,8 @@ html[data-appearance-font="cormorant"] {
 }
 
 .atlas-window-controls__button:hover {
-  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+  background: color-mix(in oklab, var(--atlas-gold, #c9922f) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--atlas-gold, #c9922f) 45%, transparent);
   color: var(--foreground);
   transform: scale(1.08);
 }
@@ -405,7 +439,8 @@ html[data-appearance-font="cormorant"] {
 }
 
 .atlas-window-controls__button--close:hover {
-  background: #ff453a;
+  background: #b3261e;
+  box-shadow: inset 0 0 0 1px #b3261e;
   color: #fff;
 }
 
@@ -1270,10 +1305,11 @@ html[data-appearance-font="cormorant"] {
 .atlas-page-title {
   margin: 8px 0 0;
   color: var(--foreground);
+  font-family: var(--font-display);
   font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 680;
+  font-weight: 600;
   line-height: 1.08;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
@@ -2625,6 +2661,22 @@ html[data-appearance-font="cormorant"] {
 
 .atlas-wallpaper-option__preview[data-wallpaper="desert"] {
   background-image: url("./assets/wallpaper-desert.jpg");
+}
+
+.atlas-wallpaper-option__preview[data-wallpaper="nile"] {
+  background-image: url("./assets/wallpaper-nile.svg");
+}
+
+.atlas-wallpaper-option__preview[data-wallpaper="papyrus"] {
+  background-image: url("./assets/wallpaper-papyrus.svg");
+}
+
+.atlas-wallpaper-option__preview[data-wallpaper="lapis"] {
+  background-image: url("./assets/wallpaper-lapis.svg");
+}
+
+.atlas-wallpaper-option__preview[data-wallpaper="aten"] {
+  background-image: url("./assets/wallpaper-aten.svg");
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -5184,6 +5236,79 @@ html[data-appearance-density="compact"] .atlas-settings-tabs {
   min-width: 0;
 }
 
+/* A quota provider's connection form folds under its card. The native marker is
+   replaced by a chevron that turns when the panel opens, so the row reads as
+   one calm line until the user asks for the fields. */
+.atlas-provider-connection {
+  margin: 0 12px 12px;
+  border-top: 1px solid color-mix(in oklab, var(--foreground) 9%, transparent);
+}
+
+.atlas-provider-connection__summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 2px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 550;
+  list-style: none;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.atlas-provider-connection__summary::-webkit-details-marker {
+  display: none;
+}
+
+.atlas-provider-connection__summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.atlas-provider-connection__summary:hover,
+.atlas-provider-connection[open] > .atlas-provider-connection__summary {
+  color: var(--foreground);
+}
+
+.atlas-provider-connection[open] > .atlas-provider-connection__summary::before {
+  transform: rotate(45deg);
+}
+
+.atlas-provider-connection__form {
+  margin: 2px 0 4px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--atlas-card);
+  box-shadow: var(--atlas-ring);
+}
+
+.atlas-provider-connection__region {
+  width: 100%;
+}
+
+/* The passive scan lives beside the search: it is what fills the "detected"
+   badges, and it never turns anything on by itself. */
+.atlas-providers__scan {
+  flex: 0 0 auto;
+  gap: 8px;
+  min-height: 38px;
+  font-size: 0.78rem;
+  font-weight: 550;
+}
+
+.atlas-providers__note {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .atlas-providers__filters {
   display: flex;
   flex-wrap: wrap;
@@ -5361,5 +5486,227 @@ html[data-appearance-density="compact"] .atlas-settings-tabs {
   .atlas-provider-card:hover,
   .atlas-providers__chip:hover {
     transform: none;
+  }
+}
+
+/*
+ * Boot beat. The eye blinks, looks right, looks left, turns red, then a laser
+ * band sweeps the window and the app takes over. One fixed timeline drives every
+ * piece so the whole thing stays in step on a slow machine: the browser skips
+ * frames, never re-orders them.
+ */
+.atlas-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  grid-auto-flow: row;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(224, 176, 96, 0.2), transparent 55%),
+    radial-gradient(circle at 50% 118%, rgba(92, 60, 26, 0.4), transparent 62%),
+    #0d0a06;
+  opacity: 1;
+  overflow: hidden;
+  transition: opacity 320ms ease;
+}
+
+.atlas-boot[data-leaving="true"] {
+  opacity: 0;
+}
+
+.atlas-boot__glow {
+  position: absolute;
+  width: 74vmin;
+  height: 74vmin;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(248, 208, 138, 0.22), transparent 46%),
+    radial-gradient(circle at 50% 52%, rgba(196, 138, 60, 0.16), transparent 68%);
+  filter: blur(18px);
+  animation: atlas-boot-glow 3100ms ease-in-out both;
+}
+
+/* Fine sand haze drifting across the black, so the eye sits in air and not on a
+   flat plate. Two gradients at different angles read as depth once blurred. */
+.atlas-boot__haze {
+  position: absolute;
+  inset: -10%;
+  background:
+    repeating-linear-gradient(112deg, rgba(255, 236, 202, 0.028) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-24deg, rgba(255, 226, 178, 0.02) 0 1px, transparent 1px 7px);
+  filter: blur(0.6px);
+  opacity: 0;
+  animation: atlas-boot-haze 3100ms ease-in-out both;
+}
+
+/* The launch mark is the shipped icon, seated on a dark plate with a warm bloom.
+   The glance shifts the whole glyph a few pixels; the lid closes over it. */
+.atlas-boot__mark {
+  position: relative;
+  width: min(44vw, 320px);
+  aspect-ratio: 1;
+  border-radius: 26%;
+  isolation: isolate;
+  animation: atlas-boot-mark 3100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.atlas-boot__glyph {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 26%;
+  object-fit: cover;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.62),
+    0 0 60px 8px rgba(255, 206, 138, 0.12);
+  animation: atlas-boot-glance 3100ms cubic-bezier(0.4, 0, 0.4, 1) both;
+}
+
+/* Glass lid: a dark, frosted slab that closes from the top and opens again, so
+   the blink reads as the glass folding rather than the picture squashing. */
+.atlas-boot__lid {
+  position: absolute;
+  inset: 0;
+  border-radius: 26%;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  background: linear-gradient(180deg, #140e06 0%, #2b2011 54%, #6a5334 92%, #a98a5d 100%);
+  box-shadow:
+    inset 0 -1.5px 0 rgba(255, 240, 212, 0.55),
+    0 12px 30px rgba(0, 0, 0, 0.5);
+  animation: atlas-boot-lid 3100ms linear both;
+}
+
+/* Specular sweep across the tile, then the red turn. */
+.atlas-boot__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 26%;
+  background: linear-gradient(112deg, transparent 30%, rgba(255, 252, 244, 0.42) 46%, rgba(255, 250, 238, 0.08) 54%, transparent 70%);
+  background-size: 260% 100%;
+  mix-blend-mode: screen;
+  animation: atlas-boot-sheen 3100ms ease-in-out both;
+  pointer-events: none;
+}
+
+.atlas-boot__red {
+  position: absolute;
+  inset: 0;
+  border-radius: 26%;
+  background: radial-gradient(circle at 50% 46%, rgba(255, 60, 44, 0.92), rgba(150, 12, 4, 0.7) 58%, rgba(90, 6, 2, 0.4) 100%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: atlas-boot-red 3100ms ease-in-out both;
+}
+
+.atlas-boot__word {
+  position: relative;
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4.2vw, 2.6rem);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: transparent;
+  background: linear-gradient(178deg, #fffdf7 8%, #f6e2bd 34%, #c99a56 68%, #8a6528 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 2px 10px rgba(255, 214, 148, 0.25));
+  animation: atlas-boot-word 3100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.atlas-boot__laser {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff2d20 16%, #fff2f0 50%, #ff2d20 84%, transparent);
+  box-shadow:
+    0 0 14px 4px rgba(255, 45, 32, 0.6),
+    0 0 48px 18px rgba(255, 45, 32, 0.3),
+    0 0 120px 50px rgba(255, 40, 30, 0.14);
+  transform: translateY(40vh) rotate(-7deg) scaleX(0);
+  opacity: 0;
+  animation: atlas-boot-laser 3100ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes atlas-boot-glow {
+  0% { opacity: 0; transform: scale(0.88); }
+  14% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; }
+  82% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+@keyframes atlas-boot-haze {
+  0% { opacity: 0; transform: translateX(-2%); }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateX(2%); }
+}
+
+@keyframes atlas-boot-eye {
+  0% { opacity: 0; transform: scale(0.86); }
+  10% { opacity: 1; transform: scale(1); }
+  92% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+@keyframes atlas-boot-mark {
+  0% { opacity: 0; transform: scale(0.88); }
+  10% { opacity: 1; transform: scale(1); }
+  92% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.04); }
+}
+
+@keyframes atlas-boot-lid {
+  0%, 15% { transform: scaleY(0); }
+  19% { transform: scaleY(1); }
+  23% { transform: scaleY(0); }
+  92% { transform: scaleY(0); }
+  95% { transform: scaleY(1); }
+  99%, 100% { transform: scaleY(0); }
+}
+
+/* Right, then left, then back to centre for the red turn. */
+@keyframes atlas-boot-glance {
+  0%, 26% { transform: translateX(0); }
+  36%, 48% { transform: translateX(10px); }
+  56%, 66% { transform: translateX(-10px); }
+  74%, 100% { transform: translateX(0); }
+}
+
+@keyframes atlas-boot-sheen {
+  0% { background-position: 190% 0; opacity: 0; }
+  12% { opacity: 0.9; }
+  46% { background-position: -60% 0; opacity: 0.5; }
+  100% { background-position: -60% 0; opacity: 0.2; }
+}
+
+@keyframes atlas-boot-red {
+  0%, 70% { opacity: 0; }
+  80%, 96% { opacity: 0.85; }
+  100% { opacity: 0.55; }
+}
+
+@keyframes atlas-boot-word {
+  0% { opacity: 0; letter-spacing: 0.55em; }
+  18% { opacity: 1; letter-spacing: 0.34em; }
+  84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes atlas-boot-laser {
+  0%, 76% { opacity: 0; transform: translateY(40vh) rotate(-7deg) scaleX(0); }
+  80% { opacity: 1; transform: translateY(-42vh) rotate(-7deg) scaleX(1); }
+  90% { opacity: 1; transform: translateY(42vh) rotate(-7deg) scaleX(1); }
+  100% { opacity: 0; transform: translateY(48vh) rotate(-7deg) scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-boot {
+    display: none;
   }
 }
