@@ -3,7 +3,7 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
-## Unreleased — 0.4.7
+## 0.4.7 — 2026-11-08
 
 ### Rebranding
 
@@ -32,10 +32,35 @@ app; the local database schema and the cloud document format carry their own ver
 
 ### Changed
 
+- **One providers screen.** The source list, the credential forms, the search and the scan now live
+  together in **Settings → Providers**; the duplicate copy in General is gone, and the scan button
+  sits next to the search it belongs to.
+- **The exchange rate is no longer a setting.** Costs are converted with a dated rate table shipped
+  with the app, so two people comparing screenshots no longer see different totals for the same
+  tokens. Settings shows the rate and the date it is from.
+- **Model names read like names.** `claude-sonnet-4-5-20250929` is shown as *Claude Sonnet 4.5* and
+  `gpt-5.6-sol` as *GPT-5.6 Sol*. The raw id stays the grouping key, so two snapshots of one model
+  never merge just because they print the same.
+- **Five Egyptian wallpapers** instead of one: Dunes, Nile at dusk, Papyrus, Lapis & gold and Aten
+  sunrise.
 - Light, dark and system themes, four type families, a type scale, ink and accent colours, glass or
   solid surfaces and configurable motion.
 - Three app marks, three mini-window densities, left-corner placement and a mini window that resizes
   without clipping.
+- A launch beat: the eye blinks, glances right, glances left, turns red and sweeps the window with a
+  laser before the app appears. Any click or Escape skips it, and it never runs with reduced motion.
+
+### Performance
+
+- **SQLite page caches cut from 64 MiB to 8 MiB per connection** (2 MiB for readers) and the WAL is
+  capped at 16 MiB, so the engine, its writer thread and a background reader no longer reserve a few
+  hundred megabytes on an idle machine. Batched writes, not a large page cache, are what keep the
+  import fast, and `PRAGMA optimize` now runs on open.
+
+### Documentation
+
+- [docs/PROVIDERS.md](docs/PROVIDERS.md) lists every supported tool with what is read from it.
+- The README shows the dashboard and links the provider list.
 
 ## 0.4.6 — 2026-10-30
 
