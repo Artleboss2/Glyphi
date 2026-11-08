@@ -57,7 +57,7 @@ describe("profile preview", () => {
       tools: [{ id: "codex", name: "Codex", tokens: 1_800, share: 1 }]
     });
     expect(preview.dailyAverage).toBe(20);
-    expect(preview.models[0]).toMatchObject({ label: "gpt-5.6-sol" });
+    expect(preview.models[0]).toMatchObject({ label: "GPT-5.6 Sol" });
     expect(preview.yearTokens).toEqual({ 2026: 1_800 });
   });
 
