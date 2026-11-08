@@ -28,7 +28,10 @@ export class NodeReadonlySqliteFactory implements ReadonlySqliteFactory {
       allowExtension: false,
       readOnly: true
     });
-    database.exec("PRAGMA query_only = ON; PRAGMA busy_timeout = 250;");
+    // A cache of a couple of megabytes is enough for the range scans this reader
+    // runs, and it keeps a background reader from holding memory the rest of the
+    // machine needs.
+    database.exec("PRAGMA query_only = ON; PRAGMA busy_timeout = 250; PRAGMA cache_size = -2048;");
     return {
       all: (sql, parameters = []) => database.prepare(sql).all(...parameters) as SqliteRow[],
       get: (sql, parameters = []) => (
@@ -41,7 +44,10 @@ export class NodeReadonlySqliteFactory implements ReadonlySqliteFactory {
 
 export function openWritableSqlite(databasePath: string): WritableSqliteDatabase {
   const database = new DatabaseSync(databasePath, { allowExtension: false });
-  database.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 2000; PRAGMA foreign_keys = ON; PRAGMA synchronous = FULL; PRAGMA cache_size = -65536; PRAGMA journal_size_limit = 67108864;");
+  // Cache budgets are deliberately small: the engine, its worker and a reader
+  // used to reserve 64 MiB each, which is more than the whole app budget on a
+  // low-end machine. Batched writes are what keep this fast, not the page cache.
+  database.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 2000; PRAGMA foreign_keys = ON; PRAGMA synchronous = FULL; PRAGMA cache_size = -8192; PRAGMA journal_size_limit = 16777216; PRAGMA optimize;");
   let closed = false;
   // Durable batch commits and checkpoints run on a separate connection so a
   // slow disk flush cannot block the engine. Small summary writes stay synchronous.
@@ -60,9 +66,9 @@ export function openWritableSqlite(databasePath: string): WritableSqliteDatabase
     if (!writer) writerRefused = true;
     return writer;
   };
-  // Keep up to 64 MiB of pages while filling the indexed observation ledger.
-  // Collection inserts tens of thousands of rows with the same statements.
-  // Recompiling each query also repeatedly reparses the schema and its indexes.
+  // Collection inserts tens of thousands of rows with the same statements, so
+  // the prepared-statement cache matters far more than a large page cache;
+  // recompiling each query also repeatedly reparses the schema and its indexes.
   const statements = new Map<string, StatementSync>();
   const prepare = (sql: string): StatementSync => {
     let statement = statements.get(sql);
@@ -112,7 +118,7 @@ function createSqliteWriter(filename: string, ready: () => void, failed: () => v
       const { parentPort, workerData } = require("node:worker_threads");
       const { DatabaseSync } = require("node:sqlite");
       const db = new DatabaseSync(workerData, { allowExtension: false });
-      db.exec("PRAGMA busy_timeout = 2000; PRAGMA wal_autocheckpoint = 0; PRAGMA foreign_keys = ON; PRAGMA synchronous = FULL; PRAGMA cache_size = -65536; PRAGMA journal_size_limit = 67108864;");
+      db.exec("PRAGMA busy_timeout = 2000; PRAGMA wal_autocheckpoint = 0; PRAGMA foreign_keys = ON; PRAGMA synchronous = FULL; PRAGMA cache_size = -8192; PRAGMA journal_size_limit = 16777216;");
       const statements = new Map();
       const prepare = sql => {
         let statement = statements.get(sql);
