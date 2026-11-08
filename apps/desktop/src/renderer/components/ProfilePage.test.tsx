@@ -61,7 +61,7 @@ describe("Profile page", () => {
     const html = render(status(account, { state: "public", handle: "ada_l" }));
 
     expect(html).toContain("Your profile is live");
-    expect(html).toContain("glyphi.app/@ada_l");
+    expect(html).toContain("usageatlas.com/@ada_l");
     expect(html).toContain("View profile");
     expect(html).not.toContain("Why publish");
   });
@@ -97,8 +97,8 @@ describe("Profile page", () => {
     const html = render(status(account, { state: "public", handle: "ada_l" }));
 
     expect(html).toContain("Put your usage in your README");
-    expect(html).toContain("[![AI Coding Activity on Glyphi](https://glyphi.app/api/cards/ada_l/heatmap.svg?theme=light)](https://glyphi.app/@ada_l)");
-    expect(html).toContain('src="https://glyphi.app/api/cards/ada_l/heatmap.svg?theme=light"');
+    expect(html).toContain("[![AI Coding Activity on Glyphi](https://usageatlas.com/api/cards/ada_l/heatmap.svg?theme=light)](https://usageatlas.com/@ada_l)");
+    expect(html).toContain('src="https://usageatlas.com/api/cards/ada_l/heatmap.svg?theme=light"');
     expect(html).toContain("Copy Markdown");
     expect(html).toContain("More card styles");
     expect(html).not.toContain("Cloud save is off");
@@ -121,18 +121,18 @@ describe("Profile page", () => {
     expect(html).toContain("Share your week or month");
     expect(html).toContain("My week in AI coding");
     expect(html).toContain("<strong>1,800</strong> tokens");
-    expect(html).toContain('<span class="atlas-recap__link">glyphi.app/@ada_l</span>');
+    expect(html).toContain('<span class="atlas-recap__link">usageatlas.com/@ada_l</span>');
     expect(html).toContain("Copy image");
     expect(html).toContain("Save image");
     expect(html).toContain("Post on X");
     expect(html).toContain("Post on Bluesky");
-    expect(html).toContain("The image and post link to glyphi.app/@ada_l.");
+    expect(html).toContain("The image and post link to usageatlas.com/@ada_l.");
   });
 
   it("puts the website on a recap until the profile is public", () => {
     for (const html of [render(status(null, { state: "signed-out" })), render(status(account, { state: "private", handle: "ada_l" }))]) {
       expect(html).toContain("My week in AI coding");
-      expect(html).toContain('<span class="atlas-recap__link">glyphi.app</span>');
+      expect(html).toContain('<span class="atlas-recap__link">usageatlas.com</span>');
       expect(html).toContain("With a public profile, the image and post link to your own page.");
     }
     expect(render(null)).not.toContain("Share your week or month");
