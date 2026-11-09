@@ -31,7 +31,7 @@ import { LimitsDashboard } from "./components/LimitsDashboard";
 import { ProfilePage } from "./components/ProfilePage";
 import { ProfilePromptModal } from "./components/ProfilePromptModal";
 import { RecapShareModal } from "./components/RecapShare";
-import { Settings } from "./components/Settings";
+import { Settings, type SettingsTab } from "./components/Settings";
 import { TrendsDashboard } from "./components/TrendsDashboard";
 import { UsageAlertsPage } from "./components/UsageAlertsPage";
 import { isSnapshotStale } from "./dashboard-model";
@@ -94,6 +94,7 @@ export function App(): React.JSX.Element {
   const [trendRange, setTrendRange] = useState<AnalyticsRange>(30);
   const [providerScope, setProviderScope] = useState<ProviderScope>("all");
   const [recapOpen, setRecapOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   const cloud = useCloudAccount();
   const profileVisited = useProfilePageVisited(route);
 
@@ -337,7 +338,7 @@ export function App(): React.JSX.Element {
     if (usageError && (!snapshot || !snapshotHasCachedUsage(snapshot)))
       return <UsageFailure error={usageError} onRetry={refreshAll} />;
     if (!snapshot || enabledProviders(snapshot).length === 0) {
-      return <UsageEmpty onOpenSettings={() => navigate("settings")} />;
+      return <UsageEmpty onOpenSettings={() => { setSettingsTab("general"); navigate("settings"); }} />;
     }
     if (route === "day") {
       return (
@@ -440,7 +441,7 @@ export function App(): React.JSX.Element {
           cloud={cloud}
           leaderboard={leaderboard}
           onOpenExternal={openExternal}
-          onOpenSettings={() => navigate("settings")}
+          onOpenSettings={() => { setSettingsTab("cloud"); navigate("settings"); }}
           snapshot={snapshot}
           today={today}
         />
@@ -497,6 +498,7 @@ export function App(): React.JSX.Element {
           onImportSettings={importSettings}
           onChooseFolder={() => window.glyphi.chooseFolder()}
           onChooseExportDirectory={() => window.glyphi.chooseExportDirectory()}
+          initialTab={settingsTab}
           onExportUsage={exportUsage}
           onRestartApp={() => window.glyphi.restartApp()}
         />
