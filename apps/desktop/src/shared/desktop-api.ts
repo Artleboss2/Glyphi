@@ -853,8 +853,14 @@ export interface LeaderboardGlance {
 }
 export interface CloudStatus extends UsageCloudState {
   account: { id: string; email: string } | null;
-  loginCode: string | null;
   profile: CloudProfileStatus;
 }
 export type CloudAction = "sign-in" | "sign-out" | "save" | "restore" | "automatic" | "resolve" | "refresh-profile";
-export interface CloudActionOptions { enabled?: boolean; recordId?: string; choice?: "local" | "cloud" }
+export interface CloudActionOptions {
+  enabled?: boolean;
+  recordId?: string;
+  choice?: "local" | "cloud";
+  /** Only for `sign-in`: sent once, over TLS, and never stored by the app. */
+  email?: string;
+  password?: string;
+}
