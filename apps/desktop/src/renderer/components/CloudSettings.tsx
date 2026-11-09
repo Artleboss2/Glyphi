@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Card, Spinner, Switch } from "@heroui/react";
+import { Button, Card, Input, Spinner, Switch } from "@heroui/react";
 import type {
   CloudAction,
   CloudActionOptions,
@@ -11,6 +11,8 @@ export function CloudSettings(): React.JSX.Element {
   const [status, setStatus] = useState<CloudStatus | null>(null);
   const [action, setAction] = useState<CloudAction | null>(null);
   const working = action !== null;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   useEffect(() => {
@@ -217,57 +219,58 @@ export function CloudSettings(): React.JSX.Element {
             ))}
           </>
         ) : (
-          <>
-            <div className="rounded-2xl border border-separator p-5">
-              <p className="text-sm font-medium">
-                Save your history with a free account
-              </p>
-              <p className="mb-4 mt-1 max-w-md text-xs leading-relaxed text-muted">
-                A browser page opens so you can sign in: entering a new email creates
-                your free account. Hourly saving is on by default after sign-in while the
-                app is running, unless you previously turned it off here. Coding-tool
-                credentials, prompts, and project and session details are never included.
-              </p>
+          <div className="rounded-2xl border border-separator p-5">
+            <p className="text-sm font-medium">
+              Save your history with a free account
+            </p>
+            <p className="mb-4 mt-1 max-w-md text-xs leading-relaxed text-muted">
+              Signing in with a new email creates your free account. Hourly saving is
+              on by default after sign-in while the app is running, unless you
+              previously turned it off here. Coding-tool credentials, prompts, and
+              project and session details are never included.
+            </p>
+            <form
+              className="grid max-w-sm gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!email.trim() || !password) return;
+                void act("sign-in", { email: email.trim(), password });
+              }}
+            >
+              <label className="grid gap-1 text-xs text-muted">
+                Email
+                <Input
+                  aria-label="Email"
+                  autoComplete="email"
+                  disabled={working}
+                  maxLength={254}
+                  onChange={(event) => setEmail(event.target.value)}
+                  type="email"
+                  value={email}
+                />
+              </label>
+              <label className="grid gap-1 text-xs text-muted">
+                Password
+                <Input
+                  aria-label="Password"
+                  autoComplete="current-password"
+                  disabled={working}
+                  maxLength={200}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  value={password}
+                />
+              </label>
               <Button
-                isPending={action === "sign-in" || Boolean(status.loginCode)}
-                isDisabled={working && action !== "sign-in"}
-                onPress={() => void act("sign-in")}
+                className="mt-1 justify-self-start"
+                isDisabled={working || !email.trim() || !password}
+                isPending={action === "sign-in"}
+                type="submit"
               >
-                {(action === "sign-in" || status.loginCode) && (
-                  <span
-                    aria-hidden="true"
-                    className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
-                  />
-                )}
-                {action === "sign-in"
-                  ? "Opening browser..."
-                  : status.loginCode
-                    ? "Waiting for approval..."
-                    : "Sign in"}
+                {action === "sign-in" ? "Signing in…" : "Sign in"}
               </Button>
-              {status.loginCode && (
-                <div
-                  className="mt-5 border-t border-separator pt-4"
-                  role="status"
-                >
-                  <p className="text-xs text-muted">
-                    Match this code in your browser, then approve sign-in.
-                  </p>
-                  <p className="my-3 font-mono text-2xl font-semibold tracking-widest">
-                    {status.loginCode}
-                  </p>
-                  <Button
-                    isDisabled={working}
-                    size="sm"
-                    variant="ghost"
-                    onPress={() => void act("sign-out")}
-                  >
-                    Cancel sign-in
-                  </Button>
-                </div>
-              )}
-            </div>
-          </>
+            </form>
+          </div>
         )}
         {visibleError && (
           <p className="text-sm text-danger" role="alert">
