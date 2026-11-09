@@ -56,7 +56,6 @@ function cloud(state: CloudStatus["profile"]["state"], automatic = true): CloudS
     conflicts: [],
     error: null,
     lastCompleted: null,
-    loginCode: null,
     pending: 0,
     profile: state === "public" || state === "private" ? { state, handle: "ada_l" } : { state } as CloudStatus["profile"],
     progress: null
