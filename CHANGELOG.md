@@ -3,6 +3,23 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## 0.4.8 — 2026-11-09
+
+### Cloud
+
+- **Cloud save runs on Glyphi's own database.** The account service is now a Supabase project
+  (`eu-west-3`) holding a hardened Postgres schema: every table sits in a private schema with RLS on
+  and no policies, `anon` and `authenticated` have no privileges, and each read or write goes through
+  a `SECURITY DEFINER` function that only the service role may execute. Session tokens are stored as
+  SHA-256 hashes, device codes are single-use, and every endpoint is rate limited.
+- **A new settings tab.** **Settings → Cloud** shows the connected account, the hourly auto-save
+  switch, save and restore, sync progress, held-back sources and any conflict to resolve. The
+  profile page can open it, so the "turn it on in Settings" hint now leads somewhere.
+- **Sign-in is a browser page, not a website.** The app shows a code, opens an approval page served
+  by the API itself, and receives a 90-day session once you confirm. A new email creates the account.
+- **No UsageAtlas URLs remain.** The cloud origin, the profile links, the embed card URLs, the share
+  links, the CSP image source and the schema id all point at Glyphi (`glyphi.xyz`) or the API.
+
 ## 0.4.7 — 2026-11-08
 
 ### Rebranding
