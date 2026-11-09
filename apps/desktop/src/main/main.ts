@@ -39,18 +39,13 @@ import { DashboardSession } from "./dashboard-session";
 import type { AppMark, AppRoute, DesktopPreferences, WidgetResizeEdge } from "../shared/desktop-api";
 import {
   IPC,
-  isAccentTint,
-  isAppearanceDensity,
-  isAppearanceFont,
-  isAppearanceSurface,
-  isAppMark,
   isBackgroundImagePreference,
-  isNumberStyle,
   isUpdateChannel,
   isUpdateRepository,
   isWidgetResizeEdge,
   sanitizeTokenAlerts
 } from "../shared/desktop-api";
+import { isAppearancePatch } from "../shared/appearance-patch";
 import { isLanguage } from "../shared/languages";
 import { isUsageAlertPreferences } from "../shared/usage-alerts";
 import { isGrowthEvent } from "../shared/growth-events";
@@ -129,6 +124,12 @@ let profileCheckTimer: NodeJS.Timeout | null = null;
 let exportTimer: NodeJS.Timeout | null = null;
 let pricingTimer: NodeJS.Timeout | null = null;
 let backgroundReleaseTimer: NodeJS.Timeout | null = null;
+/**
+ * Set while the app drops its own hidden windows to free memory. Closing the
+ * last window is then the app tidying up, not the user leaving: it must never
+ * be read as a quit request.
+ */
+let releasedBackgroundWindows = false;
 /** The last frame of the main window, so a released window comes back where it was. */
 let lastWindowBounds: Electron.Rectangle | null = null;
 let onBattery = false;
@@ -514,6 +515,7 @@ function scheduleBackgroundRelease(): void {
 
 function releaseBackgroundRenderers(): void {
   if (isQuitting || anyWindowVisible()) return;
+  if (mainWindow || widgetWindow) releasedBackgroundWindows = true;
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (!mainWindow.isMinimized() && !mainWindow.isMaximized()) lastWindowBounds = mainWindow.getBounds();
     mainWindow.destroy();
@@ -1214,8 +1216,9 @@ function registerIPC(): void {
   });
   ipcMain.handle(IPC.cloudAction, async (event, action: unknown, options: unknown) => {
     assertTrustedSender(event);
-    if (action === "sign-in") await cloudAccount.signIn();
-    else if (action === "sign-out") await cloudAccount.signOut();
+    if (action === "sign-in" && options && typeof options === "object" && "email" in options && typeof options.email === "string" && "password" in options && typeof options.password === "string") {
+      await cloudAccount.signIn(options.email.slice(0, 254), options.password.slice(0, 200));
+    } else if (action === "sign-out") await cloudAccount.signOut();
     else if (action === "save" || action === "restore") await cloudAccount.operation(action);
     else if (action === "refresh-profile") await cloudAccount.refreshProfile();
     else if (action === "automatic" && options && typeof options === "object" && "enabled" in options && typeof options.enabled === "boolean") {
@@ -1664,30 +1667,6 @@ function isPreferencePatch(value: unknown): value is Partial<DesktopPreferences>
     && (patch.usageAlerts === undefined || isUsageAlertPreferences(patch.usageAlerts));
 }
 
-function isAppearancePatch(value: unknown): boolean {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const patch = value as Record<string, unknown>;
-  if (Object.keys(patch).some((key) => !["font", "fontScale", "textColor", "mark", "numberStyle", "accent", "surface", "animate", "density", "windowOpacity", "blur", "providerColors"].includes(key))) return false;
-  return (patch.font === undefined || isAppearanceFont(patch.font))
-    && (patch.mark === undefined || isAppMark(patch.mark))
-    && (patch.numberStyle === undefined || isNumberStyle(patch.numberStyle))
-    && (patch.accent === undefined || isAccentTint(patch.accent))
-    && (patch.surface === undefined || isAppearanceSurface(patch.surface))
-    && (patch.density === undefined || isAppearanceDensity(patch.density))
-    && (patch.animate === undefined || typeof patch.animate === "boolean")
-    && (patch.fontScale === undefined || (
-      typeof patch.fontScale === "number"
-      && Number.isFinite(patch.fontScale)
-      && patch.fontScale >= 0.85
-      && patch.fontScale <= 1.3
-    ))
-    && (patch.windowOpacity === undefined || (typeof patch.windowOpacity === "number" && patch.windowOpacity >= 0.7 && patch.windowOpacity <= 1))
-    && (patch.blur === undefined || (typeof patch.blur === "number" && Number.isInteger(patch.blur) && patch.blur >= 0 && patch.blur <= 32))
-    && (patch.providerColors === undefined || (Boolean(patch.providerColors) && typeof patch.providerColors === "object" && !Array.isArray(patch.providerColors)))
-    && (patch.textColor === undefined || patch.textColor === null
-      || (typeof patch.textColor === "string" && /^#[0-9a-f]{6}$/iu.test(patch.textColor)));
-}
-
 function isTokenAlertPatch(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const patch = value as Record<string, unknown>;
@@ -1905,13 +1884,19 @@ app.on("before-quit", () => {
   exportTimer = null;
   if (pricingTimer) clearInterval(pricingTimer);
   pricingTimer = null;
-  cloudAccount?.close();
   dashboard?.close();
   void engine?.shutdown();
   void telemetry?.shutdown();
 });
 
 app.on("window-all-closed", () => {
+  // A window released for memory is reopened by the tray, the shortcut or the
+  // next launch. Treating it as the last window closing used to quit the app
+  // a minute after it went to the background.
+  if (releasedBackgroundWindows) {
+    releasedBackgroundWindows = false;
+    return;
+  }
   if (process.platform !== "darwin" && !preferences?.get().minimizeToTray) app.quit();
 });
 
