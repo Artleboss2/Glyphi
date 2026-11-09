@@ -251,7 +251,7 @@ describe("Wrapped", () => {
     expect(wrappedSeason(new Date("2026-12-31T23:59:59Z"))).toBe(2026);
     expect(wrappedSeason(new Date("2027-01-31T23:59:59Z"))).toBe(2026);
     expect(wrappedSeason(new Date("2027-02-01T00:00:00Z"))).toBeNull();
-    expect(wrappedUrl("ada_l", 2026)).toBe("https://usageatlas.com/@ada_l/wrapped/2026");
+    expect(wrappedUrl("ada_l", 2026)).toBe("https://glyphi.xyz/@ada_l/wrapped/2026");
   });
 
   it("tells a public profile once a year, when it has usage that year", () => {
@@ -286,8 +286,8 @@ describe("profile handles and links", () => {
   });
 
   it("sends new profiles to the form with the handle filled in", () => {
-    expect(profileSetupUrl({ state: "missing" }, "ada_l")).toBe("https://usageatlas.com/account/profile/edit?handle=ada_l&publish=1");
-    expect(profileSetupUrl({ state: "signed-out" }, "no")).toBe("https://usageatlas.com/account/profile/edit?publish=1");
-    expect(profileSetupUrl({ state: "private", handle: "ada" }, "")).toBe("https://usageatlas.com/account/profile");
+    expect(profileSetupUrl({ state: "missing" }, "ada_l")).toBe("https://glyphi.xyz/account/profile/edit?handle=ada_l&publish=1");
+    expect(profileSetupUrl({ state: "signed-out" }, "no")).toBe("https://glyphi.xyz/account/profile/edit?publish=1");
+    expect(profileSetupUrl({ state: "private", handle: "ada" }, "")).toBe("https://glyphi.xyz/account/profile");
   });
 });
