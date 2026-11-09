@@ -250,6 +250,7 @@ export const es: Messages = {
   "settings.widget.previewTokens": "1,284,930",
 
   "settings.widgetTab": "Mini ventana",
+  "settings.cloudTab": "Nube",
   "settings.dataTab": "Datos y privacidad",
 
   "settings.startMinimized.label": "Iniciar minimizado",
