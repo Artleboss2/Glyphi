@@ -54,7 +54,7 @@ export function ProfilePage({ cloud, leaderboard, onOpenExternal, onOpenSettings
   const shownHandle = profileHandle ?? (handle && !handleProblem(handle) ? handle : "yourname");
   const claiming = profile?.state === "signed-out" || profile?.state === "missing"
     || (pendingClaim !== null && profile?.state === "unknown");
-  const signingIn = Boolean(status?.account || status?.loginCode) || cloud.pending === "sign-in";
+  const signingIn = Boolean(status?.account) || cloud.pending === "sign-in";
   // Drop the claim when sign-in is cancelled or fails, or the account already has a profile.
   if (pendingClaim !== null && status && (!signingIn || (status.account && profile?.state !== "unknown" && profile?.state !== "missing"))) {
     setPendingClaim(null);
@@ -115,11 +115,7 @@ export function ProfilePage({ cloud, leaderboard, onOpenExternal, onOpenSettings
                 onSignIn={() => {
                   setPendingClaim(handle);
                   trackGrowth("profile_prompt_clicked", { trigger: "page", surface: "page", action: "sign-in" });
-                  void cloud.act("sign-in");
-                }}
-                onCancelSignIn={() => {
-                  setPendingClaim(null);
-                  void cloud.act("sign-out");
+                  onOpenSettings();
                 }}
                 opening={pendingClaim !== null && status.account !== null}
                 status={status}
@@ -250,10 +246,9 @@ function WrappedCallout({ onOpen, state, year }: {
 type HandleCheck = { handle: string; state: "checking" | "available" | "taken" | "error" };
 
 /** Checks a handle as the user types, before the website form asks for it. */
-function HandleClaim({ cloud, handle, onCancelSignIn, onClaim, onHandleChange, onOpenSettings, onSignIn, opening, status }: {
+function HandleClaim({ cloud, handle, onClaim, onHandleChange, onOpenSettings, onSignIn, opening, status }: {
   cloud: CloudAccountState;
   handle: string;
-  onCancelSignIn(): void;
   onClaim(action: "create", url: string): void;
   onHandleChange(handle: string): void;
   onOpenSettings(): void;
@@ -267,7 +262,7 @@ function HandleClaim({ cloud, handle, onCancelSignIn, onClaim, onHandleChange, o
   const suggested = useRef(false);
   const problem = handle ? handleProblem(handle) : null;
   const result = check?.handle === handle ? check.state : null;
-  const waiting = cloud.pending === "sign-in" || Boolean(status.loginCode) || opening;
+  const waiting = cloud.pending === "sign-in" || opening;
   const canClaim = handle !== "" && !problem && (result === "available" || result === "error");
   const email = status.account?.email;
 
@@ -334,16 +329,14 @@ function HandleClaim({ cloud, handle, onCancelSignIn, onClaim, onHandleChange, o
         ) : (
           <Button isDisabled={!canClaim || waiting} isPending={waiting} onPress={onSignIn}>
             {waiting ? <Spinner size="sm" /> : null}
-            {opening ? "Opening your profile form..." : waiting ? "Waiting for approval..." : named ? `Sign in to claim ${named}` : "Sign in to claim"}
+            {opening ? "Opening your profile form..." : named ? `Sign in to claim ${named}` : "Sign in to claim"}
           </Button>
-        )}
+        ) }
       </div>
-      {status.loginCode ? (
-        <div className="mt-3 border-t border-separator pt-3" role="status">
-          <p className="text-xs text-muted">Match this code in your browser, then approve sign-in. Your profile form opens next.</p>
-          <p className="atlas-handle-claim__code">{status.loginCode}</p>
-          <Button onPress={onCancelSignIn} size="sm" variant="ghost">Cancel sign-in</Button>
-        </div>
+      {!signedIn && !opening ? (
+        <p className="text-xs text-muted">
+          Sign in from <button className="underline" onClick={onOpenSettings} type="button">Settings &rsaquo; Cloud</button>, then come back here: your profile form opens by itself.
+        </p>
       ) : null}
       {signedIn ? (
         <p className="text-xs text-muted">
