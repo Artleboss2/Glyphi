@@ -1,4 +1,5 @@
 import { UpdateSettings } from "./UpdateControls";
+import { CloudSettings } from "./CloudSettings";
 import { SettingsData } from "./SettingsData";
 import { SettingsWidget } from "./SettingsWidget";
 import type { DashboardProvider } from "@glyphi/contracts";
@@ -67,7 +68,7 @@ interface SettingsProps {
   onRestartApp(): Promise<void>;
 }
 
-type SettingsTab = "general" | "providers" | "appearance" | "widget" | "data";
+type SettingsTab = "general" | "providers" | "cloud" | "appearance" | "widget" | "data";
 
 export function Settings({
   updateState,
@@ -165,6 +166,15 @@ export function Settings({
           {t("settings.providersTab")}
         </button>
         <button
+          aria-selected={tab === "cloud"}
+          className="atlas-settings-tabs__tab"
+          onClick={() => setTab("cloud")}
+          role="tab"
+          type="button"
+        >
+          {t("settings.cloudTab")}
+        </button>
+        <button
           aria-selected={tab === "appearance"}
           className="atlas-settings-tabs__tab"
           onClick={() => setTab("appearance")}
@@ -201,6 +211,10 @@ export function Settings({
         <>
           <div className="mt-8 grid gap-5" hidden={tab !== "providers"}>
             <SettingsProviders onSetProviderEnabled={onSetProviderEnabled} />
+          </div>
+
+          <div className="mt-8 grid gap-5" hidden={tab !== "cloud"}>
+            <CloudSettings />
           </div>
 
           <div className="mt-8 grid gap-5" hidden={tab !== "general"}>
