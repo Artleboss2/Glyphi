@@ -15,7 +15,6 @@ import {
 } from "./profile-promotion";
 
 const IDLE_POLL_MS = 60_000;
-const SIGN_IN_POLL_MS = 3_000;
 const FOCUS_RECHECK_MS = 30_000;
 /** Let the usage page settle before anything covers it. */
 const PROMPT_DELAY_MS = 4_000;
@@ -43,7 +42,6 @@ export function useCloudAccount(): CloudAccountState {
   const [error, setError] = useState<string | null>(null);
   const lastCheck = useRef(0);
   const previousAccount = useRef<string | null | undefined>(undefined);
-  const waiting = Boolean(status?.loginCode);
   const accountId = status ? status.account?.id ?? null : undefined;
   // Every poll, focus check, and save step brings a new status object.
   const profileKey = status ? JSON.stringify(status.profile) : null;
@@ -57,14 +55,14 @@ export function useCloudAccount(): CloudAccountState {
         const next = await window.glyphi.getCloudStatus();
         if (active) setStatus(next);
       } catch { /* Keep the last known status. */ }
-      if (active) timer = setTimeout(() => void poll(), waiting ? SIGN_IN_POLL_MS : IDLE_POLL_MS);
+      if (active) timer = setTimeout(() => void poll(), IDLE_POLL_MS);
     };
     void poll();
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [waiting]);
+  }, []);
 
   // A fresh sign-in waits for its profile check instead of the next slow poll.
   useEffect(() => {
