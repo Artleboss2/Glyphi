@@ -63,7 +63,7 @@ __pycache__/
 *.py[cod]
 
 # The private API/WEB service lives in its own repository.
-.glyphi-api-web/
+glyphi-api-web/
 
 # The announcement film is built in its own repository.
 .glyphi-media/
