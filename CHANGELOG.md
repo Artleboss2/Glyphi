@@ -3,6 +3,22 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## Unreleased
+
+### Fixed
+
+- **Sign-in works.** The approval page used to open a `*.supabase.co` URL that rendered as raw HTML:
+  Supabase forces `text/plain` and a sandbox CSP on HTML from an Edge Function. The email and
+  password form now lives in **Settings → Cloud**, the function mints the session directly, and the
+  device-code flow (page, routes and table) is gone.
+- **Appearance settings stick.** `theme` was missing from the patch allowlist, so every change on the
+  Appearance tab was rejected after it had already been painted: the theme flicked back and the
+  selected tile never moved. The validator now lives in `shared/appearance-patch.ts` with a test that
+  covers every field.
+- **The app no longer quits in the background.** Releasing the hidden windows for memory counted as
+  "the last window closed", so a minimized or tray-bound app quit a minute later. That release no
+  longer triggers a quit; the tray, the shortcut and the hotkey all bring the window back.
+
 ## 0.4.8 — 2026-11-09
 
 ### Cloud
