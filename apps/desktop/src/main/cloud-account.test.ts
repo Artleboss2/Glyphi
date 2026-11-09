@@ -16,12 +16,10 @@ vi.mock("node:fs", async (original) => {
 
 const electron = vi.hoisted(() => ({
   directory: "",
-  openExternal: vi.fn(),
   encryptString: vi.fn((value: string) => Buffer.from(value)),
 }));
 vi.mock("electron", () => ({
   app: { getPath: () => electron.directory },
-  shell: { openExternal: electron.openExternal },
   safeStorage: {
     isEncryptionAvailable: () => true,
     getSelectedStorageBackend: () => "test",
@@ -34,23 +32,18 @@ let account: CloudAccount;
 let cloud: ReturnType<typeof vi.fn>;
 let fetchMock: ReturnType<typeof vi.fn>;
 let engineAccountId: string | null;
-const code = {
-  device_code: "private-code",
-  user_code: "ABCD-EFGH",
-  expires_in: 600,
-  interval: 5,
-};
-const response = (value: unknown, status = 200) =>
-  Response.json(value, { status });
+const response = (value: unknown, status = 200) => Response.json(value, { status });
+const accepted = (userId = "user-a") => response({
+  access_token: `token-${userId}`,
+  token_type: "bearer",
+  expires_in: 7_776_000,
+  user: { id: userId, email: `${userId}@example.com` },
+});
 
 beforeEach(() => {
-  vi.useFakeTimers();
   files.failRemove = false;
   electron.encryptString.mockClear();
-  electron.directory = mkdtempSync(
-    path.join(tmpdir(), "glyphi-auth-test-"),
-  );
-  electron.openExternal.mockReset().mockResolvedValue(undefined);
+  electron.directory = mkdtempSync(path.join(tmpdir(), "glyphi-auth-test-"));
   engineAccountId = null;
   cloud = vi.fn(async (params: { operation: string; accountId?: string }) => {
     if (params.operation === "configure") engineAccountId = params.accountId || null;
@@ -61,78 +54,59 @@ beforeEach(() => {
   account = new CloudAccount({ cloud } as unknown as EngineManager);
 });
 afterEach(() => {
-  account.close();
-  vi.useRealTimers();
   vi.unstubAllGlobals();
   rmSync(electron.directory, { recursive: true, force: true });
 });
 
 describe("desktop cloud sign-in", () => {
-  it("allows retry after a failed browser launch", async () => {
-    fetchMock.mockImplementation(async () => response(code));
-    electron.openExternal.mockRejectedValueOnce(new Error("no browser"));
-    await expect(account.signIn()).rejects.toThrow(
-      "Couldn't open your browser",
-    );
-    expect((await account.status()).loginCode).toBeNull();
-    await account.signIn();
-    expect((await account.status()).loginCode).toBe(code.user_code);
-    expect(electron.openExternal).toHaveBeenCalledTimes(2);
+  it("sends the email and password, then configures the engine with the returned account", async () => {
+    fetchMock.mockResolvedValueOnce(accepted());
+    await account.signIn("ada@example.com", "correct horse");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toMatch(/\/api\/auth\/sign-in$/u);
+    expect(init).toMatchObject({ method: "POST" });
+    expect(JSON.parse(init.body)).toEqual({ email: "ada@example.com", password: "correct horse" });
+    expect((await account.status()).account).toEqual({ id: "user-a", email: "user-a@example.com" });
+    expect(cloud).toHaveBeenCalledWith(expect.objectContaining({
+      operation: "configure",
+      accountId: "user-a",
+      token: "token-user-a",
+    }));
+    expect(electron.encryptString).toHaveBeenCalledOnce();
   });
 
-  it("ignores a code arriving after cancellation and prevents duplicate requests", async () => {
-    let complete!: (value: Response) => void;
-    fetchMock.mockReturnValue(
-      new Promise<Response>((resolve) => {
-        complete = resolve;
-      }),
+  it("explains a rejected password and keeps the app signed out", async () => {
+    fetchMock.mockResolvedValueOnce(response(
+      { error: "sign_in_failed", message: "That email and password don't match an account." },
+      401,
+    ));
+    await expect(account.signIn("ada@example.com", "wrong")).rejects.toThrow(
+      "That email and password don't match an account.",
     );
-    const pending = account.signIn();
-    await account.signIn();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    await account.signOut();
-    complete(response(code));
-    await pending;
-    expect(electron.openExternal).not.toHaveBeenCalled();
-    expect((await account.status()).loginCode).toBeNull();
+    expect(electron.encryptString).not.toHaveBeenCalled();
+    expect((await account.status()).account).toBeNull();
+    await expect(account.operation("save")).rejects.toThrow("Sign in first");
   });
 
-  it("keeps waiting until approval, then configures the engine with the verified account", async () => {
-    fetchMock
-      .mockResolvedValueOnce(response(code))
-      .mockResolvedValueOnce(response({ error: "authorization_pending" }, 400))
-      .mockResolvedValueOnce(response({ access_token: "session-token" }))
-      .mockResolvedValueOnce(
-        response({ user: { id: "user-a", email: "a@example.com" } }),
-      );
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
-    expect((await account.status()).loginCode).toBe(code.user_code);
-    await vi.advanceTimersByTimeAsync(5000);
-    expect((await account.status()).account).toEqual({
-      id: "user-a",
-      email: "a@example.com",
-    });
-    expect(cloud).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operation: "configure",
-        accountId: "user-a",
-        token: "session-token",
-      }),
-    );
-    expect((await account.status()).loginCode).toBeNull();
+  it("does nothing when an account is already signed in", async () => {
+    fetchMock.mockResolvedValueOnce(accepted());
+    await account.signIn("ada@example.com", "correct horse");
+    await account.signIn("ada@example.com", "correct horse");
+    const signIns = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/api/auth/sign-in"));
+    expect(signIns).toHaveLength(1);
+  });
+
+  it("rejects an answer without a session token", async () => {
+    fetchMock.mockResolvedValueOnce(response({ user: { id: "user-a", email: "a@example.com" } }));
+    await expect(account.signIn("ada@example.com", "correct horse")).rejects.toThrow("Sign-in failed");
+    expect(electron.encryptString).not.toHaveBeenCalled();
   });
 
   it("configures the dashboard only for verified sign-in, sign-out, and reconnection", async () => {
     const configure = vi.fn(async (_accountId: string, operation: () => Promise<unknown>) => operation());
     account = new CloudAccount({ cloud } as unknown as EngineManager, configure);
-    fetchMock
-      .mockResolvedValueOnce(response(code))
-      .mockResolvedValueOnce(response({ access_token: "session-token" }))
-      .mockResolvedValueOnce(response({ user: { id: "user-a", email: "a@example.com" } }));
-    await account.signIn();
-    expect(configure).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(5000);
+    fetchMock.mockResolvedValueOnce(accepted());
+    await account.signIn("ada@example.com", "correct horse");
     expect(configure).toHaveBeenCalledExactlyOnceWith("user-a", expect.any(Function), false);
     await account.status();
     await account.operation("automatic", { enabled: false });
@@ -152,26 +126,19 @@ describe("desktop cloud sign-in", () => {
       await waiting;
       return operation();
     });
-    fetchMock
-      .mockResolvedValueOnce(response(code))
-      .mockResolvedValueOnce(response({ access_token: "session-token" }))
-      .mockResolvedValueOnce(response({ user: { id: "new-account", email: "a@example.com" } }));
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(await account.status()).toMatchObject({ account: null, accountId: null, busy: true, pending: 0, conflicts: [], loginCode: code.user_code });
+    fetchMock.mockResolvedValueOnce(accepted("new-account"));
+    const signingIn = account.signIn("ada@example.com", "correct horse");
+    await vi.waitFor(() => expect(engineAccountId).toBe("previous-account"));
+    expect(await account.status()).toMatchObject({ account: null, accountId: null, busy: true, pending: 0, conflicts: [] });
     finish();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(await account.status()).toMatchObject({ account: { id: "new-account" }, accountId: "new-account", loginCode: null });
+    await signingIn;
+    expect(await account.status()).toMatchObject({ account: { id: "new-account" }, accountId: "new-account" });
   });
 
   it("forwards cloud controls and disconnects the account on sign-out", async () => {
     await expect(account.operation("save")).rejects.toThrow("Sign in first");
-    fetchMock
-      .mockResolvedValueOnce(response(code))
-      .mockResolvedValueOnce(response({ access_token: "session-token" }))
-      .mockResolvedValueOnce(response({ user: { id: "user-a", email: "a@example.com" } }));
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
+    fetchMock.mockResolvedValueOnce(accepted());
+    await account.signIn("ada@example.com", "correct horse");
     for (const operation of ["save", "restore"] as const) {
       await account.operation(operation);
       expect(cloud).toHaveBeenLastCalledWith({ operation });
@@ -192,56 +159,21 @@ describe("desktop cloud sign-in", () => {
   });
 
   it("disconnects and revokes the session even when its saved file cannot be removed", async () => {
-    fetchMock
-      .mockResolvedValueOnce(response(code))
-      .mockResolvedValueOnce(response({ access_token: "session-token" }))
-      .mockResolvedValueOnce(response({ user: { id: "user-a", email: "a@example.com" } }));
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
+    fetchMock.mockResolvedValueOnce(accepted());
+    await account.signIn("ada@example.com", "correct horse");
     files.failRemove = true;
     fetchMock.mockResolvedValueOnce(response({ success: true }));
     await expect(account.signOut()).rejects.toThrow("saved sign-in");
     expect(cloud).toHaveBeenLastCalledWith(expect.objectContaining({ operation: "configure", accountId: "", token: "" }));
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining("/api/auth/sign-out"), expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Bearer session-token" }) }));
+    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining("/api/auth/sign-out"), expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Bearer token-user-a" }) }));
     expect(await account.status()).toMatchObject({ account: null, automatic: false, busy: false, error: expect.stringContaining("saved sign-in") });
-  });
-
-  it.each([
-    ["expired_token", "Sign-in expired"],
-    ["access_denied", "cancelled in your browser"],
-  ])("explains %s and allows a fresh sign-in", async (error, message) => {
-    fetchMock
-      .mockResolvedValueOnce(response(code))
-      .mockResolvedValueOnce(response({ error }, 400));
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
-    expect((await account.status()).error).toContain(message);
-    expect((await account.status()).loginCode).toBeNull();
-  });
-
-  it("does not sign in when an in-flight token arrives after cancellation", async () => {
-    let complete!: (value: Response) => void;
-    fetchMock.mockResolvedValueOnce(response(code)).mockReturnValueOnce(
-      new Promise<Response>((resolve) => {
-        complete = resolve;
-      }),
-    );
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
-    await account.signOut();
-    complete(response({ access_token: "late-token" }));
-    await vi.advanceTimersByTimeAsync(0);
-    expect((await account.status()).account).toBeNull();
-    expect(electron.encryptString).not.toHaveBeenCalled();
   });
 });
 
 describe("desktop profile status", () => {
   function routes(profile: () => Response | Promise<Response>, userId = "user-a") {
     fetchMock.mockImplementation(async (url: string) => {
-      if (url.endsWith("/api/auth/device/code")) return response(code);
-      if (url.endsWith("/api/auth/device/token")) return response({ access_token: `token-${userId}` });
-      if (url.endsWith("/api/auth/get-session")) return response({ user: { id: userId, email: `${userId}@example.com` } });
+      if (url.endsWith("/api/auth/sign-in")) return accepted(userId);
       if (url.endsWith("/api/desktop/profile")) return profile();
       if (url.includes("/api/handles/")) return response({ available: false });
       if (url.endsWith("/api/auth/sign-out")) return response({ success: true });
@@ -249,8 +181,7 @@ describe("desktop profile status", () => {
     });
   }
   async function signIn() {
-    await account.signIn();
-    await vi.advanceTimersByTimeAsync(5000);
+    await account.signIn("ada@example.com", "correct horse");
   }
   const profileCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/api/desktop/profile"));
 
