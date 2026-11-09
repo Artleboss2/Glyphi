@@ -250,6 +250,7 @@ export const hi: Messages = {
   "settings.widget.previewTokens": "1,284,930",
 
   "settings.widgetTab": "मिनी विंडो",
+  "settings.cloudTab": "क्लाउड",
   "settings.dataTab": "डेटा और गोपनीयता",
 
   "settings.startMinimized.label": "मिनिमाइज़ होकर शुरू करें",
