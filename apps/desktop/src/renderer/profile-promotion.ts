@@ -5,7 +5,7 @@ import { formatCompactNumber } from "./number-format";
 import { buildPeriodUsage, inclusiveDayCount, periodBounds, shiftDay, type UsageDay } from "./personal-analytics";
 import { buildModelMix } from "./usage-insights";
 
-export const PROFILE_SITE = "https://usageatlas.com";
+export const PROFILE_SITE = "https://glyphi.xyz";
 export const LEADERBOARD_URL = `${PROFILE_SITE}/leaderboard`;
 /** The website ranks the last 30 days, today included, by default. */
 const LEADERBOARD_DAYS = 30;
