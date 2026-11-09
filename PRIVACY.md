@@ -29,8 +29,11 @@ Scans stay on the machine. Provider discovery and log parsing make **no network 
 
 ## What is sent when you enable cloud save
 
-Cloud save is optional and off until you press **Save to cloud**. When it runs, it sends only the usage
-records for the days you have collected:
+Cloud save is optional and off until you sign in. Signing in opens a page in your browser: it creates
+a Glyphi account with your email and password, and the account row, the email and a SHA-256 hash of
+the session token are stored in our Supabase database (region `eu-west-3`). The token itself is kept
+only on your computer, encrypted with the operating system's protected storage. When cloud save runs,
+it sends only the usage records for the days you have collected:
 
 - a hashed source identifier, the provider id, and the day in your local calendar;
 - token and request totals, hourly buckets, model keys and the estimated cost;
@@ -70,6 +73,9 @@ performed.
   of days.
 - Turning a provider off stops reading its files; its existing records stay until you purge them.
 - Cloud save can be left off permanently; the desktop app is fully usable without an account.
+- Signing out revokes the session token on the server. To have the stored account and its usage
+  records deleted, ask through the security contact below; rows are removed within 30 days. The
+  database keeps no copy of your password.
 
 ## Changes to this policy
 
