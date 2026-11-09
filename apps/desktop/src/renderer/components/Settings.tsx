@@ -66,9 +66,11 @@ interface SettingsProps {
   onChooseExportDirectory(): Promise<string | null>;
   onExportUsage(): Promise<void>;
   onRestartApp(): Promise<void>;
+  /** Opens on this tab, so "sign in" from the profile page lands on Cloud. */
+  initialTab?: SettingsTab;
 }
 
-type SettingsTab = "general" | "providers" | "cloud" | "appearance" | "widget" | "data";
+export type SettingsTab = "general" | "providers" | "cloud" | "appearance" | "widget" | "data";
 
 export function Settings({
   updateState,
@@ -92,10 +94,12 @@ export function Settings({
   onChooseFolder,
   onChooseExportDirectory,
   onExportUsage,
-  onRestartApp
+  onRestartApp,
+  initialTab = "general"
 }: SettingsProps): React.JSX.Element {
   const { t } = useI18n();
-  const [tab, setTab] = useState<SettingsTab>("general");
+  const [tab, setTab] = useState<SettingsTab>(initialTab);
+  useEffect(() => setTab(initialTab), [initialTab]);
   const appearance = preferences?.appearance ?? DEFAULT_APPEARANCE;
   // The slider previews live, so the type scale is applied to the document at once
   // while the saved preference only follows once the drag settles. The draft holds
