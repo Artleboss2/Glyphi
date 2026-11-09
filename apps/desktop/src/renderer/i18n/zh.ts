@@ -250,6 +250,7 @@ export const zh: Messages = {
   "settings.widget.previewTokens": "1,284,930",
 
   "settings.widgetTab": "迷你窗口",
+  "settings.cloudTab": "云端",
   "settings.dataTab": "数据与隐私",
 
   "settings.startMinimized.label": "启动时最小化",
