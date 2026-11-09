@@ -1,4 +1,4 @@
-import { app, safeStorage, shell } from "electron";
+import { app, safeStorage } from "electron";
 import {
   existsSync,
   readFileSync,
@@ -18,18 +18,9 @@ interface Session {
   token: string;
   user: { id: string; email: string };
 }
-interface DeviceLogin {
-  deviceCode: string;
-  userCode: string;
-  expires: number;
-  interval: number;
-}
 
 export class CloudAccount {
   private session: Session | null = null;
-  private login: DeviceLogin | null = null;
-  private loginAttempt: object | null = null;
-  private timer: NodeJS.Timeout | null = null;
   private error: string | null = null;
   private profile: { accountId: string; status: KnownProfileStatus } | null = null;
   private profileCheck: { session: Session; done: Promise<void> } | null = null;
@@ -71,14 +62,13 @@ export class CloudAccount {
       return {
         accountId: null, account: null, automatic: false, pending: 0,
         busy: this.error === null, progress: null, lastCompleted: null,
-        heldBack: [], heldBackCount: 0, conflicts: [], loginCode: this.login?.userCode ?? null,
+        heldBack: [], heldBackCount: 0, conflicts: [],
         error: this.error, profile: { state: "unknown" },
       };
     }
     return {
       ...state,
       account,
-      loginCode: this.login?.userCode ?? null,
       error: this.error ?? state.error,
       profile: this.profileStatus(),
     };
@@ -115,17 +105,13 @@ export class CloudAccount {
     if (typeof value.available !== "boolean") throw new Error("Invalid handle response.");
     return value.available;
   }
-  async signIn(): Promise<void> {
-    if (this.login || this.loginAttempt) return;
-    const url = new URL(BASE_URL);
-    if (
-      url.protocol !== "https:" &&
-      !(
-        url.protocol === "http:" &&
-        ["localhost", "127.0.0.1"].includes(url.hostname)
-      )
-    )
-      throw new Error("Cloud sign-in requires HTTPS.");
+
+  /**
+   * Signs in from the app itself. A first sign-in creates the free account; the
+   * token lands in the OS keyring, so it never touches a plain file.
+   */
+  async signIn(email: string, password: string): Promise<void> {
+    if (this.session) return;
     if (
       !safeStorage.isEncryptionAvailable() ||
       (process.platform === "linux" &&
@@ -135,52 +121,32 @@ export class CloudAccount {
         "Unlock your system keyring to save your sign-in securely.",
       );
     this.error = null;
-    const attempt = {};
-    this.loginAttempt = attempt;
-    try {
-      const response = await this.request("/api/auth/device/code", {
-        client_id: "glyphi-desktop",
-      });
-      if (this.loginAttempt !== attempt) return;
-      if (
-        typeof response.device_code !== "string" ||
-        !response.device_code ||
-        typeof response.user_code !== "string" ||
-        !response.user_code ||
-        typeof response.expires_in !== "number" ||
-        !Number.isFinite(response.expires_in) ||
-        response.expires_in <= 0 ||
-        typeof response.interval !== "number" ||
-        !Number.isFinite(response.interval) ||
-        response.interval <= 0
-      )
-        throw new Error("Invalid sign-in response.");
-      this.login = {
-        deviceCode: response.device_code,
-        userCode: response.user_code,
-        expires: Date.now() + Math.min(response.expires_in, 600) * 1000,
-        interval: Math.max(5, response.interval) * 1000,
-      };
-      try {
-        await shell.openExternal(
-          `${BASE_URL}/account/device?user_code=${encodeURIComponent(this.login.userCode)}`,
-        );
-      } catch {
-        throw new Error("Couldn't open your browser. Try signing in again.");
-      }
-      if (this.loginAttempt !== attempt) return;
-      this.schedulePoll();
-    } catch (error) {
-      if (this.loginAttempt !== attempt) return;
-      this.cancelLogin();
-      throw error;
-    } finally {
-      if (this.loginAttempt === attempt) this.loginAttempt = null;
-    }
+    const response = await this.request("/api/auth/sign-in", {
+      email,
+      password,
+    });
+    if (typeof response.access_token !== "string" || !response.access_token)
+      throw new Error("Sign-in failed. Try again.");
+    const user = response.user as { id?: unknown; email?: unknown } | undefined;
+    if (typeof user?.id !== "string" || typeof user.email !== "string")
+      throw new Error("Could not verify your account.");
+    const session: Session = {
+      token: response.access_token,
+      user: { id: user.id, email: user.email },
+    };
+    writeFileSync(
+      `${this.filename}.tmp`,
+      safeStorage.encryptString(JSON.stringify(session)),
+      { mode: 0o600 },
+    );
+    renameSync(`${this.filename}.tmp`, this.filename);
+    this.session = session;
+    await this.configure();
+    // The profile page reads this straight after sign-in; a failed check stays quiet.
+    await this.refreshProfile();
   }
 
   async signOut(): Promise<void> {
-    this.cancelLogin();
     const session = this.session;
     this.session = null;
     this.error = null;
@@ -217,9 +183,6 @@ export class CloudAccount {
     this.error = null;
     await this.engine.cloud({ operation, ...values });
   }
-  close(): void {
-    this.cancelLogin();
-  }
   async reconnect(): Promise<void> {
     await this.configure(true);
   }
@@ -231,71 +194,6 @@ export class CloudAccount {
       baseURL: BASE_URL,
     };
     return this.configureEngine(params.accountId, () => this.engine.cloud(params), reconnect);
-  }
-  private schedulePoll(): void {
-    if (!this.login) return;
-    this.timer = setTimeout(() => void this.poll(), this.login.interval);
-    this.timer.unref();
-  }
-  private async poll(): Promise<void> {
-    const login = this.login;
-    if (!login) return;
-    try {
-      if (Date.now() >= login.expires)
-        throw new Error("Sign-in expired. Try again.");
-      const response = await this.request("/api/auth/device/token", {
-        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-        device_code: login.deviceCode,
-        client_id: "glyphi-desktop",
-      });
-      if (this.login !== login) return;
-      if (
-        response.error === "authorization_pending" ||
-        response.error === "slow_down"
-      ) {
-        if (response.error === "slow_down") login.interval += 5000;
-        this.schedulePoll();
-        return;
-      }
-      if (typeof response.access_token !== "string")
-        throw new Error("Sign-in was not approved. Try again.");
-      const data = await this.request(
-        "/api/auth/get-session",
-        undefined,
-        response.access_token,
-      );
-      if (this.login !== login) return;
-      const user = data.user as { id?: unknown; email?: unknown } | undefined;
-      if (typeof user?.id !== "string" || typeof user.email !== "string")
-        throw new Error("Could not verify your account.");
-      const session: Session = {
-        token: response.access_token,
-        user: { id: user.id, email: user.email },
-      };
-      writeFileSync(
-        `${this.filename}.tmp`,
-        safeStorage.encryptString(JSON.stringify(session)),
-        {
-          mode: 0o600,
-        },
-      );
-      renameSync(`${this.filename}.tmp`, this.filename);
-      this.session = session;
-      await this.configure();
-      if (this.login !== login) return;
-      this.cancelLogin();
-      void this.refreshProfile();
-    } catch (error) {
-      if (this.login !== login) return;
-      this.error = error instanceof Error ? error.message : "Sign-in failed.";
-      this.cancelLogin();
-    }
-  }
-  private cancelLogin(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
-    this.login = null;
-    this.loginAttempt = null;
   }
   private async request(
     endpoint: string,
@@ -338,19 +236,16 @@ export class CloudAccount {
     const value = JSON.parse(text) as Record<string, unknown>;
     if (!value || typeof value !== "object")
       throw new Error("Invalid account response.");
-    if (value.error === "expired_token")
-      throw new Error("Sign-in expired. Try again.");
-    if (value.error === "access_denied")
-      throw new Error("Sign-in was cancelled in your browser.");
-    if (
-      !response.ok &&
-      !["authorization_pending", "slow_down"].includes(String(value.error))
-    )
+    if (!response.ok) {
+      // The API explains a rejected password; anything else is opaque on purpose.
+      if (value.error === "sign_in_failed" && typeof value.message === "string" && value.message)
+        throw new Error(value.message);
       throw new Error(
         response.status === 503
           ? "Cloud accounts are not configured yet."
           : "Account request failed. Try again.",
       );
+    }
     return value;
   }
 }
