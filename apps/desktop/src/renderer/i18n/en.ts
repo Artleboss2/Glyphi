@@ -252,6 +252,7 @@ export const en = {
   "settings.widget.previewTokens": "1,284,930",
 
   "settings.widgetTab": "Mini window",
+  "settings.cloudTab": "Cloud",
   "settings.dataTab": "Data & privacy",
 
   "settings.startMinimized.label": "Start minimised",
