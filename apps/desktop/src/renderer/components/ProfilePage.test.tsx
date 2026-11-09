@@ -240,7 +240,6 @@ function status(signedIn: CloudStatus["account"], profile: CloudProfileStatus): 
     conflicts: [],
     error: null,
     lastCompleted: null,
-    loginCode: null,
     pending: 0,
     profile,
     progress: null
