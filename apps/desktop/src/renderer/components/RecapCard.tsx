@@ -1,5 +1,5 @@
 import type { CSSProperties, Ref } from "react";
-import { formatCompactNumber } from "../number-format";
+import { formatShortNumber } from "../number-format";
 import { RECAP_PERIODS, recapBusiestDay, recapChange, recapDateRange, type RecapData, type RecapTheme } from "../recap";
 import { ProviderLogo } from "./ProviderLogo";
 import "../recap.css";
@@ -31,7 +31,7 @@ export function RecapCard({ linkLabel, recap, ref, theme }: {
         <div className="atlas-recap__summary">
           <p className="atlas-recap__title">{RECAP_PERIODS[recap.period].title}</p>
           <p className="atlas-recap__dates">{recapDateRange(recap)}</p>
-          <p className="atlas-recap__total"><strong>{formatCompactNumber(recap.totalTokens)}</strong> tokens</p>
+          <p className="atlas-recap__total"><strong>{formatShortNumber(recap.totalTokens)}</strong> tokens</p>
           {change ? <p className="atlas-recap__change" data-direction={direction}>{change}</p> : null}
           <dl className="atlas-recap__stats">
             <div><dt>Active days</dt><dd>{recap.activeDays} of {recap.days.length}</dd></div>
