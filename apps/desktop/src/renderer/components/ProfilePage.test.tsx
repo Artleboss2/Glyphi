@@ -120,7 +120,9 @@ describe("Profile page", () => {
 
     expect(html).toContain("Share your week or month");
     expect(html).toContain("My week in AI coding");
-    expect(html).toContain("<strong>1,800</strong> tokens");
+    // The share card is a fixed-width image: it always uses the short form so a
+    // big total cannot overflow into the chart beside it.
+    expect(html).toContain("<strong>1.8K</strong> tokens");
     expect(html).toContain('<span class="atlas-recap__link">glyphi.xyz/@ada_l</span>');
     expect(html).toContain("Copy image");
     expect(html).toContain("Save image");
