@@ -152,12 +152,14 @@ jobs:
       - run: bun ci
       - run: bun run test
       - run: bun run generate:desktop-icons
-      - name: Require PostHog token
+      - name: Check PostHog token
         shell: bash
+        # The main bundle injects an empty key when the secret is absent and the
+        # telemetry client then reports itself unconfigured, so a build without it
+        # is valid: it just ships without anonymous telemetry.
         run: |
           if [ -z "${POSTHOG_PROJECT_TOKEN}" ]; then
-            echo "::error::Add repository secret POSTHOG_PROJECT_TOKEN."
-            exit 1
+            echo "::warning::POSTHOG_PROJECT_TOKEN is not set: this build ships with anonymous telemetry disabled. Add the repository secret to include it."
           fi
       - name: Prepare signing
         shell: pwsh
@@ -253,12 +255,14 @@ jobs:
       - run: bun ci
       - run: bun run test
         if: ${{ matrix.arch == 'x64' }}
-      - name: Require PostHog token
+      - name: Check PostHog token
         shell: bash
+        # The main bundle injects an empty key when the secret is absent and the
+        # telemetry client then reports itself unconfigured, so a build without it
+        # is valid: it just ships without anonymous telemetry.
         run: |
           if [ -z "${POSTHOG_PROJECT_TOKEN}" ]; then
-            echo "::error::Add repository secret POSTHOG_PROJECT_TOKEN."
-            exit 1
+            echo "::warning::POSTHOG_PROJECT_TOKEN is not set: this build ships with anonymous telemetry disabled. Add the repository secret to include it."
           fi
       - name: Generate macOS icon
         shell: bash
@@ -353,12 +357,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y fakeroot rpm squashfs-tools xvfb fuse3
       - run: bun ci
-      - name: Require PostHog token
+      - name: Check PostHog token
         shell: bash
+        # The main bundle injects an empty key when the secret is absent and the
+        # telemetry client then reports itself unconfigured, so a build without it
+        # is valid: it just ships without anonymous telemetry.
         run: |
           if [ -z "${POSTHOG_PROJECT_TOKEN}" ]; then
-            echo "::error::Add repository secret POSTHOG_PROJECT_TOKEN."
-            exit 1
+            echo "::warning::POSTHOG_PROJECT_TOKEN is not set: this build ships with anonymous telemetry disabled. Add the repository secret to include it."
           fi
       - run: bun run desktop:make -- --platform=linux --arch=${{ matrix.arch }}
       - name: Packaged smoke test
