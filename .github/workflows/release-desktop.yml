@@ -33,6 +33,7 @@ jobs:
     outputs:
       build: ${{ steps.decide.outputs.build }}
       release: ${{ steps.decide.outputs.release }}
+      macos: ${{ steps.decide.outputs.macos }}
       tag: ${{ steps.decide.outputs.tag }}
       version: ${{ steps.decide.outputs.version }}
       sha: ${{ github.sha }}
@@ -46,6 +47,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PUBLISH_REQUESTED: ${{ inputs.publish == true }}
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         shell: bash
         run: |
           set -euo pipefail
@@ -80,15 +86,29 @@ jobs:
             fi
           fi
 
+          # An unsigned macOS build is not distributable: Gatekeeper refuses it
+          # and the app is notarized at all, so the platform is skipped instead
+          # of failing the run and blocking the platforms that can ship.
+          macos=false
+          if [[ -n "${APPLE_CERTIFICATE_BASE64:-}" && -n "${APPLE_SIGNING_IDENTITY:-}" &&
+                -n "${APPLE_API_KEY_BASE64:-}" && -n "${APPLE_API_KEY_ID:-}" &&
+                -n "${APPLE_API_ISSUER:-}" ]]; then
+            macos=true
+          fi
+
           {
             echo "build=$build"
             echo "release=$release"
+            echo "macos=$macos"
             echo "tag=desktop-v${version}"
             echo "version=$version"
           } >> "$GITHUB_OUTPUT"
           echo "### Glyphi ${version}" >> "$GITHUB_STEP_SUMMARY"
           echo "- build: \`${build}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- publish: \`${release}\` (\`desktop-v${version}\`)" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$macos" == "false" ]]; then
+            echo "- macOS: skipped (no Apple signing and notarization secrets)" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   quality:
     name: Quality (Linux)
@@ -219,6 +239,7 @@ jobs:
   macos:
     name: macOS ${{ matrix.arch }}
     needs: [gate, quality]
+    if: ${{ needs.gate.outputs.macos == 'true' }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -407,6 +428,7 @@ jobs:
       RELEASE_TAG: ${{ needs.gate.outputs.tag }}
       RELEASE_VERSION: ${{ needs.gate.outputs.version }}
       RELEASE_SHA: ${{ needs.gate.outputs.sha }}
+      MACOS_BUILD: ${{ needs.gate.outputs.macos }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -437,8 +459,10 @@ jobs:
             failed=1
           fi
           for arch in x64 arm64; do
-            expect "macOS ${arch} disk image" 1 "$(matches -iname '*.dmg' -ipath "*${arch}*")"
-            expect "macOS ${arch} update ZIP" 1 "$(matches -iname '*.zip' -ipath '*darwin*' -ipath "*${arch}*")"
+            if [[ "$MACOS_BUILD" == "true" ]]; then
+              expect "macOS ${arch} disk image" 1 "$(matches -iname '*.dmg' -ipath "*${arch}*")"
+              expect "macOS ${arch} update ZIP" 1 "$(matches -iname '*.zip' -ipath '*darwin*' -ipath "*${arch}*")"
+            fi
             expect "Linux ${arch} AppImage" 1 "$(matches -iname '*.AppImage' -ipath "*${arch}*")"
           done
           if [[ "$failed" -ne 0 ]]; then
