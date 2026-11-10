@@ -8,7 +8,6 @@ export const en = {
   "nav.insights": "Insights",
   "nav.alerts": "Usage alerts",
   "nav.profile": "Public profile",
-  "nav.attribution": "Attribution",
   "nav.diagnostics": "Diagnostics",
   "nav.settings": "Settings",
 
