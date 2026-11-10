@@ -1,6 +1,6 @@
 import type { AppRoute, EngineStatus } from "../../shared/desktop-api";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { AttributionIcon, BellIcon, DayIcon, InsightsIcon, ProfileIcon, PulseIcon, SettingsIcon, TrendsIcon } from "../icons";
+import { BellIcon, DayIcon, InsightsIcon, ProfileIcon, PulseIcon, SettingsIcon, TrendsIcon } from "../icons";
 import { useI18n } from "../i18n";
 import type { MessageKey } from "../i18n";
 
@@ -42,7 +42,6 @@ const routeTitleKeys: Record<AppRoute, MessageKey> = {
   limits: "nav.history",
   alerts: "nav.alerts",
   profile: "nav.profile",
-  attribution: "nav.attribution",
   diagnostics: "nav.diagnostics",
   settings: "nav.settings"
 };
@@ -55,9 +54,8 @@ const routeOrder: Record<AppRoute, number> = {
   limits: 3,
   alerts: 4,
   profile: 5,
-  attribution: 6,
-  diagnostics: 7,
-  settings: 8
+  diagnostics: 6,
+  settings: 7
 };
 
 export function AppShell({ route, engineStatus, noticeCount, onNavigate, profileBadge = false, appMarkUrl = null, previousRoute = null,  activityControl,
@@ -178,13 +176,6 @@ export function AppShell({ route, engineStatus, noticeCount, onNavigate, profile
             noticeCount={noticeCount}
             onPress={() => onNavigate("diagnostics")}
             status={engineStatus}
-          />
-          <RailButton
-            icon={AttributionIcon}
-            isCurrent={route === "attribution"}
-            itemRef={(node) => registerRailButton("attribution", node)}
-            label={t("nav.attribution")}
-            onPress={() => onNavigate("attribution")}
           />
           <RailButton
             icon={SettingsIcon}
