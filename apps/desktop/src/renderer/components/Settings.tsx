@@ -99,7 +99,6 @@ export function Settings({
 }: SettingsProps): React.JSX.Element {
   const { t } = useI18n();
   const [tab, setTab] = useState<SettingsTab>(initialTab);
-  useEffect(() => setTab(initialTab), [initialTab]);
   const appearance = preferences?.appearance ?? DEFAULT_APPEARANCE;
   // The slider previews live, so the type scale is applied to the document at once
   // while the saved preference only follows once the drag settles. The draft holds
