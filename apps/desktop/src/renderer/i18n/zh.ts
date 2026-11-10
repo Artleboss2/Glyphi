@@ -6,7 +6,6 @@ export const zh: Messages = {
   "nav.insights": "洞察",
   "nav.alerts": "用量提醒",
   "nav.profile": "公开资料",
-  "nav.attribution": "归因",
   "nav.diagnostics": "诊断",
   "nav.settings": "设置",
 
