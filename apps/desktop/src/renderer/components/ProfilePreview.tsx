@@ -7,8 +7,16 @@ import "../profile-promotion.css";
  * A tilted mock of the public profile page, drawn from history on this computer. It
  * mirrors the website's layout closely enough that the real page feels familiar.
  */
+/** `ada_lovelace` reads as "Ada Lovelace"; the placeholder stays "Your name". */
+export function previewName(handle: string): string {
+  if (handle === "yourname") return "Your name";
+  const words = handle.split("_").filter(Boolean);
+  if (!words.length) return "Your name";
+  return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
 export function ProfilePreview({ handle, preview }: { handle: string; preview: ProfilePreviewData }): React.JSX.Element {
-  const name = handle === "yourname" ? "Your name" : handle.charAt(0).toUpperCase() + handle.slice(1).replace(/_/gu, " ");
+  const name = previewName(handle);
   return (
     <figure aria-label={`Preview of your Glyphi profile @${handle}`} className="atlas-profile-preview">
       <div className="atlas-profile-preview__frame">
