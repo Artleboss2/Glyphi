@@ -228,6 +228,23 @@ export function CloudSettings(): React.JSX.Element {
               previously turned it off here. Coding-tool credentials, prompts, and
               project and session details are never included.
             </p>
+            <div className="mb-4 grid gap-2">
+              <Button
+                className="justify-self-start"
+                isDisabled={working}
+                isPending={action === "sign-in-github"}
+                variant="outline"
+                onPress={() => void act("sign-in-github")}
+              >
+                {action === "sign-in-github"
+                  ? "Waiting for your browser…"
+                  : "Sign in with GitHub"}
+              </Button>
+              <p className="max-w-md text-xs leading-relaxed text-muted">
+                Opens glyphi.xyz in your browser. Approve the page there and this
+                copy is signed in — no password is typed into the app.
+              </p>
+            </div>
             <form
               className="grid max-w-sm gap-3"
               onSubmit={(event) => {
