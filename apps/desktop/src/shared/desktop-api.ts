@@ -4,7 +4,7 @@ import type { ProviderCredential, ProviderCredentialStatus, QuotaProviderId } fr
 import type { ReportPlan } from "./report-plans";
 import type { Language } from "./languages";
 
-export type AppRoute = "day" | "trends" | "insights" | "limits" | "alerts" | "profile" | "attribution" | "settings" | "diagnostics";
+export type AppRoute = "day" | "trends" | "insights" | "limits" | "alerts" | "profile" | "settings" | "diagnostics";
 export type EngineStatus = "starting" | "ready" | "degraded" | "stopped";
 
 export interface DesktopUpdateState {
