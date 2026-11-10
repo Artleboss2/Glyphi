@@ -419,7 +419,10 @@ jobs:
   publish:
     name: Publish desktop release
     needs: [gate, windows, macos, linux]
-    if: ${{ needs.gate.outputs.release == 'true' }}
+    # `!cancelled()` and not plain success: a skipped platform (macOS without
+    # Apple secrets) is not a failed build, and a plain `if` would skip the
+    # release along with it. The verification step decides what is required.
+    if: ${{ !cancelled() && needs.gate.outputs.release == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
