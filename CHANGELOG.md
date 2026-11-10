@@ -3,6 +3,21 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## 0.5.0 — 2026-11-10
+
+### Cloud
+
+- **Sign in with GitHub, straight from the app.** Settings → Cloud now offers *Sign in with GitHub*
+  beside the email form. The app listens on a loopback port, opens your browser, and GitHub comes
+  back to that port with a one-time ticket; the app trades the ticket for its own session. Your
+  password never passes through the app, and no token ever crosses the browser.
+
+### Fixed
+
+- **A release no longer fails on a platform we cannot sign.** macOS builds need an Apple certificate
+  to be distributable, and without one the whole run failed and took the release with it. The run
+  now skips macOS when those secrets are absent, and publishes what it did build.
+
 ## 0.4.9 — 2026-11-09
 
 ### Removed
