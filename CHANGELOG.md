@@ -3,9 +3,19 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
-## Unreleased
+## 0.4.9 — 2026-11-09
+
+### Removed
+
+- **The Attribution page is gone.** The rail no longer carries it and reporting mixes are no longer
+  editable in the app. Cloud save still uploads everything the server models; a source it does not
+  model stays on this computer, and the copy that used to point at the page now says so.
 
 ### Fixed
+
+- **Share cards no longer overflow.** The recap image is a fixed 1200 × 675 canvas, but its total
+  followed the Appearance setting, so "150,503,609" at 124 px ran over the chart beside it. The card
+  now always uses the short form ("150.5M"), whatever the interface is set to.
 
 - **Sign-in works.** The approval page used to open a `*.supabase.co` URL that rendered as raw HTML:
   Supabase forces `text/plain` and a sandbox CSP on HTML from an Edge Function. The email and
