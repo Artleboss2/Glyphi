@@ -22,7 +22,6 @@ import { UpdateTag } from "./components/UpdateControls";
 import { I18nProvider, useI18n } from "./i18n";
 import { AppShell } from "./components/AppShell";
 import { BootEye } from "./components/BootEye";
-import { Attribution } from "./components/Attribution";
 import { DayDashboard } from "./components/DayDashboard";
 import type { HealthNotice } from "./components/Diagnostics";
 import { Diagnostics } from "./components/Diagnostics";
@@ -42,7 +41,6 @@ import { wantsProfilePrompt } from "./profile-promotion";
 import { useCloudAccount, useLeaderboard, useProfilePageVisited, useProfilePrompt } from "./profile-state";
 import { useWrappedNudge } from "./wrapped-nudge";
 import { currencyRate } from "../shared/currency-rates";
-import type { ReportPlan } from "../shared/report-plans";
 
 const ALERT_INBOX_KEY = "glyphi.alert-inbox.v1";
 const MAX_INBOX_ENTRIES = 50;
@@ -84,7 +82,6 @@ export function App(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
-  const [aliasSaving, setAliasSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dismissedNotices, setDismissedNotices] = useState<string[]>([]);
   const [usageAlert, setUsageAlert] = useState<DesktopUsageAlert | null>(null);
@@ -245,15 +242,6 @@ export function App(): React.JSX.Element {
       setError(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The provider setting could not be saved.");
-    }
-  }
-
-  async function saveReportPlans(plans: ReportPlan[]): Promise<void> {
-    setAliasSaving(true);
-    try {
-      setPreferences(await window.glyphi.setReportPlans(plans));
-    } finally {
-      setAliasSaving(false);
     }
   }
 
@@ -468,16 +456,9 @@ export function App(): React.JSX.Element {
           prompt={profilePrompt.prompt}
         />
       )}
-      {route === "attribution" && (
-        <Attribution
-          onSave={saveReportPlans}
-          preferences={preferences}
-          providers={snapshot?.providers ?? []}
-          saving={aliasSaving}
-        />
-      )}
       {route === "settings" && (
         <Settings
+          key={settingsTab}
           updateState={updates.state}
           onCheckForUpdates={updates.check}
           onInstallUpdate={updates.install}
@@ -587,7 +568,7 @@ function backgroundImageErrorMessage(caught: unknown): string {
 
 function routeFromHash(hash: string): AppRoute {
   const candidate = hash.replace(/^#/, "");
-  if (candidate === "trends" || candidate === "insights" || candidate === "limits" || candidate === "alerts" || candidate === "profile" || candidate === "attribution" || candidate === "settings" || candidate === "diagnostics") {
+  if (candidate === "trends" || candidate === "insights" || candidate === "limits" || candidate === "alerts" || candidate === "profile" || candidate === "settings" || candidate === "diagnostics") {
     return candidate;
   }
   return "day";
