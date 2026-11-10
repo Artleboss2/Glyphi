@@ -18,7 +18,7 @@ vi.mock("node:fs", async (original) => {
 const electron = vi.hoisted(() => ({
   directory: "",
   encryptString: vi.fn((value: string) => Buffer.from(value)),
-  openExternal: vi.fn(async (_url: string) => undefined),
+  openExternal: vi.fn<(url: string) => Promise<void>>(async () => undefined),
 }));
 vi.mock("electron", () => ({
   app: { getPath: () => electron.directory },
