@@ -305,18 +305,6 @@ export function WrenchIcon(props: IconProps): React.JSX.Element {
   );
 }
 
-/** Attribution: the scales of Maat. */
-export function AttributionIcon(props: IconProps): React.JSX.Element {
-  return (
-    <IconBase {...props}>
-      <path d="M12 3.6v17.6M5 21h14" />
-      <path d="M4 6.6h16" />
-      <circle cx="12" cy="3.4" r="1.3" />
-      <path d="M4 6.6 1.4 13.2h5.2zM20 6.6l-2.6 6.6h5.2z" />
-    </IconBase>
-  );
-}
-
 /** Offering: a lotus vase. */
 export function GiftIcon(props: IconProps): React.JSX.Element {
   return (
