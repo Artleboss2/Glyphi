@@ -51,7 +51,11 @@ export function ProfilePage({ cloud, leaderboard, onOpenExternal, onOpenSettings
   const [pendingClaim, setPendingClaim] = useState<string | null>(null);
   const viewed = useRef(false);
   const profileHandle = profile && "handle" in profile ? profile.handle : null;
-  const shownHandle = profileHandle ?? (handle && !handleProblem(handle) ? handle : "yourname");
+  // The preview follows the field keystroke by keystroke, partial or not: a handle
+  // only becomes "invalid" on save, and a preview that waits for validity looks
+  // frozen while someone types their name.
+  const typed = handle.trim().toLowerCase();
+  const shownHandle = profileHandle ?? (typed || "yourname");
   const claiming = profile?.state === "signed-out" || profile?.state === "missing"
     || (pendingClaim !== null && profile?.state === "unknown");
   const signingIn = Boolean(status?.account) || cloud.pending === "sign-in";
