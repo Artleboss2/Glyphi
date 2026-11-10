@@ -855,7 +855,7 @@ export interface CloudStatus extends UsageCloudState {
   account: { id: string; email: string } | null;
   profile: CloudProfileStatus;
 }
-export type CloudAction = "sign-in" | "sign-out" | "save" | "restore" | "automatic" | "resolve" | "refresh-profile";
+export type CloudAction = "sign-in" | "sign-in-github" | "sign-out" | "save" | "restore" | "automatic" | "resolve" | "refresh-profile";
 export interface CloudActionOptions {
   enabled?: boolean;
   recordId?: string;

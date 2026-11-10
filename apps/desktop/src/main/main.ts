@@ -1218,7 +1218,8 @@ function registerIPC(): void {
     assertTrustedSender(event);
     if (action === "sign-in" && options && typeof options === "object" && "email" in options && typeof options.email === "string" && "password" in options && typeof options.password === "string") {
       await cloudAccount.signIn(options.email.slice(0, 254), options.password.slice(0, 200));
-    } else if (action === "sign-out") await cloudAccount.signOut();
+    } else if (action === "sign-in-github") await cloudAccount.signInWithGitHub();
+    else if (action === "sign-out") await cloudAccount.signOut();
     else if (action === "save" || action === "restore") await cloudAccount.operation(action);
     else if (action === "refresh-profile") await cloudAccount.refreshProfile();
     else if (action === "automatic" && options && typeof options === "object" && "enabled" in options && typeof options.enabled === "boolean") {
