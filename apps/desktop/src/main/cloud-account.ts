@@ -1,4 +1,4 @@
-import { app, safeStorage } from "electron";
+import { app, safeStorage, shell } from "electron";
 import {
   existsSync,
   readFileSync,
@@ -6,10 +6,14 @@ import {
   renameSync,
   unlinkSync,
 } from "node:fs";
+import { createServer } from "node:http";
 import path from "node:path";
 import type { EngineManager } from "./engine-manager";
 import type { CloudProfileStatus, CloudStatus, UsageCloudState } from "../shared/desktop-api";
 import { CLOUD_URL as BASE_URL } from "./cloud-url";
+
+/** How long the loopback listener waits for the browser to come back. */
+const GITHUB_SIGN_IN_TIMEOUT_MS = 5 * 60 * 1000;
 
 export type KnownProfileStatus = Extract<CloudProfileStatus, { state: "missing" | "private" | "public" }>;
 
@@ -112,6 +116,142 @@ export class CloudAccount {
    */
   async signIn(email: string, password: string): Promise<void> {
     if (this.session) return;
+    this.requireKeyring();
+    this.error = null;
+    await this.adopt(await this.request("/api/auth/sign-in", { email, password }));
+  }
+
+  /**
+   * Signs in through GitHub in the browser, the way native apps do: the app
+   * listens on a loopback port, the API sends the browser back to it with a
+   * one-time ticket, and the ticket is exchanged here for a session. The
+   * password never touches the app and no token ever crosses the browser.
+   */
+  async signInWithGitHub(): Promise<void> {
+    if (this.session) return;
+    this.requireKeyring();
+    this.error = null;
+
+    const listener = await this.listenForTicket();
+    const target = new URL(`${BASE_URL}/api/auth/github/start`);
+    target.searchParams.set("port", String(listener.port));
+    try {
+      await shell.openExternal(target.toString());
+    } catch {
+      listener.close();
+      throw new Error(
+        "Glyphi could not open your browser. Open it, then try again.",
+      );
+    }
+
+    try {
+      const ticket = await listener.ticket;
+      const answer = await this.request("/api/auth/github/exchange", {
+        ticket,
+      });
+      const token = answer.access_token;
+      if (typeof token !== "string" || !token)
+        throw new Error("Sign-in failed. Try again.");
+      // The exchange returns the token alone; the account comes from the session
+      // it unlocks, which also proves the token is usable before it is stored.
+      const session = await this.request(
+        "/api/auth/get-session",
+        undefined,
+        token,
+      );
+      await this.adopt({ access_token: token, user: session.user as {
+        id?: unknown;
+        email?: unknown;
+      } | undefined });
+    } finally {
+      listener.close();
+    }
+  }
+
+  /**
+   * One loopback listener for the redirect back from GitHub. It only answers
+   * this machine, and only for a well-formed ticket; anything else is ignored.
+   */
+  private async listenForTicket(): Promise<{
+    port: number;
+    ticket: Promise<string>;
+    close: () => void;
+  }> {
+    let settle!: { resolve: (ticket: string) => void; reject: (error: Error) => void };
+    const ticket = new Promise<string>((resolve, reject) => {
+      settle = { resolve, reject };
+    });
+    // The rejection is reported through the await below; this only keeps Node
+    // from warning about it while the browser is still opening.
+    ticket.catch(() => undefined);
+
+    const server = createServer((request, response) => {
+      const url = new URL(request.url ?? "/", "http://127.0.0.1");
+      const remote = request.socket.remoteAddress ?? "";
+      if (
+        url.pathname !== "/callback" ||
+        !/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/u.test(remote)
+      ) {
+        response.writeHead(404, { connection: "close" }).end();
+        return;
+      }
+      const value = url.searchParams.get("ticket") ?? "";
+      if (!/^[a-f0-9]{32,64}$/u.test(value)) {
+        response
+          .writeHead(400, {
+            "content-type": "text/plain; charset=utf-8",
+            connection: "close",
+          })
+          .end("That sign-in link is invalid. Start again from Glyphi.");
+        return;
+      }
+      response
+        .writeHead(200, {
+          "content-type": "text/html; charset=utf-8",
+          connection: "close",
+        })
+        .end(
+          "<!doctype html><meta charset=utf-8><title>Glyphi</title>" +
+            '<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#12100d;color:#f2e7d5;font:16px/1.6 system-ui,sans-serif">' +
+            '<main style="text-align:center"><h1 style="font-weight:600;font-size:20px">You are signed in.</h1>' +
+            '<p style="color:#b9a88f">Return to Glyphi — this tab can be closed.</p></main>',
+        );
+      settle.resolve(value);
+    });
+
+    const port = await new Promise<number>((resolve, reject) => {
+      server.once("error", () =>
+        reject(
+          new Error("Glyphi could not listen for the sign-in. Try again."),
+        ),
+      );
+      server.listen(0, "127.0.0.1", () => {
+        const address = server.address();
+        if (address && typeof address === "object") resolve(address.port);
+        else
+          reject(
+            new Error("Glyphi could not listen for the sign-in. Try again."),
+          );
+      });
+    });
+
+    const timer = setTimeout(
+      () => settle.reject(new Error("Sign-in timed out. Try again.")),
+      GITHUB_SIGN_IN_TIMEOUT_MS,
+    );
+    timer.unref();
+    return {
+      port,
+      ticket,
+      close: () => {
+        clearTimeout(timer);
+        server.close();
+      },
+    };
+  }
+
+  /** A session is only worth having if the OS can keep it out of plain files. */
+  private requireKeyring(): void {
     if (
       !safeStorage.isEncryptionAvailable() ||
       (process.platform === "linux" &&
@@ -120,20 +260,20 @@ export class CloudAccount {
       throw new Error(
         "Unlock your system keyring to save your sign-in securely.",
       );
-    this.error = null;
-    const response = await this.request("/api/auth/sign-in", {
-      email,
-      password,
-    });
-    if (typeof response.access_token !== "string" || !response.access_token)
+  }
+
+  /** Checks the answer, then parks the session in the OS keyring. */
+  private async adopt(answer: {
+    access_token?: unknown;
+    user?: { id?: unknown; email?: unknown } | undefined;
+  }): Promise<void> {
+    const token = answer.access_token;
+    const user = answer.user;
+    if (typeof token !== "string" || !token)
       throw new Error("Sign-in failed. Try again.");
-    const user = response.user as { id?: unknown; email?: unknown } | undefined;
     if (typeof user?.id !== "string" || typeof user.email !== "string")
       throw new Error("Could not verify your account.");
-    const session: Session = {
-      token: response.access_token,
-      user: { id: user.id, email: user.email },
-    };
+    const session: Session = { token, user: { id: user.id, email: user.email } };
     writeFileSync(
       `${this.filename}.tmp`,
       safeStorage.encryptString(JSON.stringify(session)),
