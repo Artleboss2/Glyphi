@@ -1,4 +1,5 @@
 import { mkdtempSync, rmSync } from "node:fs";
+import { get } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,9 +18,11 @@ vi.mock("node:fs", async (original) => {
 const electron = vi.hoisted(() => ({
   directory: "",
   encryptString: vi.fn((value: string) => Buffer.from(value)),
+  openExternal: vi.fn(async (_url: string) => undefined),
 }));
 vi.mock("electron", () => ({
   app: { getPath: () => electron.directory },
+  shell: { openExternal: (url: string) => electron.openExternal(url) },
   safeStorage: {
     isEncryptionAvailable: () => true,
     getSelectedStorageBackend: () => "test",
@@ -43,6 +46,7 @@ const accepted = (userId = "user-a") => response({
 beforeEach(() => {
   files.failRemove = false;
   electron.encryptString.mockClear();
+  electron.openExternal.mockClear();
   electron.directory = mkdtempSync(path.join(tmpdir(), "glyphi-auth-test-"));
   engineAccountId = null;
   cloud = vi.fn(async (params: { operation: string; accountId?: string }) => {
@@ -283,5 +287,52 @@ describe("handle availability", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     fetchMock.mockResolvedValueOnce(response({ available: "yes" }));
     await expect(account.handleAvailable("ada_l")).rejects.toThrow("Invalid handle response.");
+  });
+});
+
+describe("sign in with GitHub", () => {
+  /** The real fetch is stubbed in this suite, so the loopback call goes through http. */
+  const callBack = (port: string, path: string) =>
+    new Promise<number>((resolve, reject) => {
+      const request = get({ host: "127.0.0.1", port, path }, (answer) => {
+        answer.resume();
+        resolve(answer.statusCode ?? 0);
+      });
+      request.on("error", reject);
+    });
+
+  it("waits for the browser on a loopback port, then exchanges the ticket", async () => {
+    fetchMock
+      .mockResolvedValueOnce(response({ access_token: "token-user-b" }))
+      .mockResolvedValueOnce(response({ user: { id: "user-b", email: "user-b@example.com" } }));
+
+    const signingIn = account.signInWithGitHub();
+    await vi.waitFor(() => expect(electron.openExternal).toHaveBeenCalledOnce());
+    const opened = new URL(electron.openExternal.mock.calls[0][0]);
+    expect(opened.pathname).toMatch(/\/api\/auth\/github\/start$/u);
+    const port = opened.searchParams.get("port") ?? "";
+    expect(Number(port)).toBeGreaterThan(1023);
+
+    // A malformed ticket is refused without ending the wait.
+    expect(await callBack(port, "/callback?ticket=short")).toBe(400);
+    const ticket = "a".repeat(48);
+    expect(await callBack(port, `/callback?ticket=${ticket}`)).toBe(200);
+
+    await signingIn;
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toMatch(/\/api\/auth\/github\/exchange$/u);
+    expect(JSON.parse(init.body)).toEqual({ ticket });
+    expect(fetchMock.mock.calls[1][0]).toMatch(/\/api\/auth\/get-session$/u);
+    expect((await account.status()).account).toEqual({ id: "user-b", email: "user-b@example.com" });
+    // The listener is gone once the browser has come back.
+    await expect(callBack(port, "/callback?ticket=" + ticket)).rejects.toThrow();
+  });
+
+  it("closes the listener when the browser cannot be opened", async () => {
+    electron.openExternal.mockRejectedValueOnce(new Error("no browser"));
+    await expect(account.signInWithGitHub()).rejects.toThrow(
+      "Glyphi could not open your browser",
+    );
+    expect(electron.encryptString).not.toHaveBeenCalled();
   });
 });
