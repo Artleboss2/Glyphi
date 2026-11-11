@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Artleboss2/Glyphi/releases/latest"><strong>Download for Windows</strong></a>
+  <a href="https://github.com/Artleboss2/Glyphi/releases/latest"><strong>Download Glyphi</strong></a>
   ·
   <a href="https://github.com/Artleboss2/Glyphi/releases">All releases</a>
   ·
@@ -57,17 +57,25 @@ scans. There is no account requirement, no proxy, no certificate to install and 
 
 ## Install
 
-Windows builds are published from this repository:
+Windows, macOS and Linux builds are published from this repository, each by its own release
+pipeline.
 
-1. Open the [latest release](https://github.com/Artleboss2/Glyphi/releases/latest).
-2. Download `Glyphi-<version> Setup.exe` (per-user install, no administrator prompt) or the portable
-   `Glyphi-win32-x64-<version>.zip`.
-3. Run it. The installer is not Authenticode-signed yet, so SmartScreen may ask for
-   **More info → Run anyway**.
+**Windows (x64)** — `Glyphi-<version> Setup.exe` (per-user install, no administrator prompt) or the
+portable `Glyphi-win32-x64-<version>.zip`. The installer is not Authenticode-signed yet, so
+SmartScreen may ask for **More info → Run anyway**. The in-app updater reads the Squirrel feed
+published with each release.
 
-The in-app updater reads the Squirrel feed published with each release. macOS and Linux packages are
-produced by the same Electron Forge configuration (`dmg`, `AppImage`, `deb`, `rpm`) and can be built
-locally with the commands below.
+**macOS (Apple Silicon and Intel)** — a `.dmg` and an update `.zip` per architecture. These builds are
+compiled but **not signed or notarized** yet, so the first launch needs one confirmation from
+Gatekeeper; if macOS still refuses, run
+`xattr -dr com.apple.quarantine /Applications/Glyphi.app` once.
+
+**Linux (x64 and arm64)** — an AppImage for a portable run, plus `.deb` and `.rpm` packages for a
+system install. Linux has shipped since 0.4 and is supported alongside Windows, not as an
+afterthought.
+
+Every platform ships a `SHA256SUMS-<platform>` file with each release. Building locally uses the
+same Electron Forge configuration and the commands below.
 
 ## What it reads
 
