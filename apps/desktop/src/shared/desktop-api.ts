@@ -819,13 +819,6 @@ export interface UsageCloudState {
   progress: CloudProgress | null;
   lastCompleted: "save" | "restore" | null;
   error: string | null;
-  /**
-   * Sources with usage waiting on this computer that the server does not model.
-   * Capitalized display names.
-   */
-  heldBack: string[];
-  /** Pending observations `heldBack` covers. `pending` includes them, so subtract. */
-  heldBackCount: number;
   conflicts: { recordId: string; provider: string; day: string | null; localTokens: number | null; cloudTokens: number | null }[];
 }
 /**
