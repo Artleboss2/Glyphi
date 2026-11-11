@@ -3,6 +3,34 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## 0.5.1 — 2026-11-10
+
+### Fixed
+
+- **Your public profile finally shows your usage.** Cloud save held back every source that was not
+  on a fixed shortlist, and Freebuff — where nearly all of a typical history lives — was not on it.
+  Saves reported success while the day records stayed on your computer, so glyphi.xyz/@you stayed
+  empty. Every source this build collects is now uploaded under its own name, and the misleading
+  "stays on this computer" notice is gone.
+- **Cloud save stops rejecting the whole batch.** A day record that had never been uploaded was sent
+  with revision 0, which the API refuses, so one new day made every save fail with
+  `invalid records`. New records now claim revision 1, and a refusal reports the server's own
+  reason instead of a bare status code.
+- **An empty account receives the whole history.** A save on an account the server had never seen
+  only ever queued the days collected since sign-in. Each save now reads the account first; when it
+  holds nothing, the entire local history is queued and uploaded.
+
+### Changed
+
+- **Three release pipelines instead of one.** Windows, macOS and Linux now build and publish
+  independently, so a platform that cannot build no longer fails the others. Windows assets, macOS
+  assets and Linux assets each arrive on the same release with their own `SHA256SUMS-<platform>`.
+- **macOS ships again, unsigned.** The Apple secrets are optional now: without them the build is
+  compiled, published, and marked unsigned instead of being skipped. With them it signs and
+  notarizes exactly as before.
+- **Linux is in the release notes, not an afterthought.** The README states the AppImage, `.deb` and
+  `.rpm` targets that have shipped since 0.4.
+
 ## 0.5.0 — 2026-11-10
 
 ### Cloud
