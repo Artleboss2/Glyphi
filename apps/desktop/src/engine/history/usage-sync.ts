@@ -10,8 +10,6 @@ import {
 } from "@glyphi/contracts/usage";
 import type { CloudProgress } from "../../shared/desktop-api";
 import {
-  KNOWN_PROVIDERS,
-  OFFICIAL_PROVIDERS,
   applyTargetToFact,
   applyTargetToRecord,
   isOfficialProvider,
@@ -53,8 +51,6 @@ export class UsageSync {
   private preparedAccount: string | null = null;
   /** Applied to the uploaded copy only; local history keeps its real provider. */
   private reportPlans: ReportPlan[] = [];
-  /** Sources the server does not model and no rule renames, kept on this computer. */
-  private heldBack: string[] = [];
   /** Token mass already reported per source and target, mirrored in settings. */
   private readonly wheelMass = new Map<string, number>();
   constructor(
@@ -74,8 +70,6 @@ export class UsageSync {
       busy: this.running !== null,
       progress: this.progress ? { ...this.progress } : null,
       lastCompleted: this.lastCompleted,
-      heldBack: [...this.heldBack],
-      heldBackCount: this.heldBackPending(),
       error: this.error ?? (counts.invalid
         ? `${counts.invalid} invalid local usage ${counts.invalid === 1 ? "record was" : "records were"} skipped. Other records can still be saved. Refresh usage to retry.`
         : null),
@@ -124,47 +118,11 @@ export class UsageSync {
   }
   setReportPlans(plans: ReportPlan[]): void {
     this.reportPlans = plans;
-    // A new rule takes a source out of the held-back notice right away, instead
-    // of waiting for the next save to notice.
-    this.reportHeldBack(this.unsupportedProviders(this.uploadableProviders()));
   }
-  /**
-   * Providers this server accepts: the ones it models, plus the sources a saved
-   * rule renames. A source without a rule of its own follows the first saved
-   * mix, so it is uploadable too; with no mix at all it stays local.
-   */
-  private uploadableProviders(): string[] {
-    if (this.reportPlans.length > 0) return [...KNOWN_PROVIDERS];
-    const providers = new Set<string>(OFFICIAL_PROVIDERS);
-    for (const plan of this.reportPlans) providers.add(plan.source);
-    return [...providers];
-  }
-  /** Sources with pending usage that the server would reject as-is. */
-  private unsupportedProviders(providers: readonly string[]): string[] {
-    const pending = [
-      ...this.store.statistics.pendingProviders(),
-      ...this.store.pendingProviders()
-    ];
-    return [...new Set(pending)].filter(provider => !providers.includes(provider)).sort();
-  }
-  /** Records the local sources with pending usage the server would reject as-is. */
-  private reportHeldBack(providers: readonly string[]): void {
-    this.heldBack = [...providers];
-  }
-  /**
-   * Usage that no save can upload yet because the server models no such source
-   * and no rule renames it. It is counted apart from `pending` so a source the
-   * user has not mapped never reads as a save that keeps failing.
-   */
-  private heldBackPending(): number {
-    const held = this.unsupportedProviders(this.uploadableProviders());
-    if (!held.length) return 0;
-    return this.store.pendingCount(held) + this.store.statistics.pendingCount(held);
-  }
-  /** Rows a save would send right now, counting the server's own sources only. */
+  /** Rows a save would send right now: everything pending, minus what it skips. */
   private uploadablePending(): number {
-    const providers = this.uploadableProviders();
-    return this.store.uploadableCount(providers) + this.store.statistics.pendingCount(providers);
+    const counts = this.store.counts();
+    return Math.max(0, counts.pending - counts.conflicts - counts.invalid);
   }
   /**
    * Renames one pending observation for upload. Its id is the hash of its content,
@@ -279,8 +237,6 @@ export class UsageSync {
     this.lastCompleted = null;
     this.running = (async () => {
       this.error = null;
-      const providers = this.uploadableProviders();
-      if (!upload) this.heldBack = [];
       if (upload) {
         if (this.beforeSave) await this.beforeSave(controller.signal);
         if (this.closed || this.stopping) return;
@@ -308,7 +264,7 @@ export class UsageSync {
           // The server fingerprints an observation's content and only stores a copy
           // whose id still matches it, so a renamed fact is renumbered here and the
           // acknowledgement is translated back to the row this computer wrote.
-          const outgoing = this.store.statistics.pending(providers)
+          const outgoing = this.store.statistics.pending()
             .slice(0, STATISTICS_SAVE_BATCH)
             .map(fact => this.renameFact(fact));
           if (!outgoing.length) break;
@@ -339,7 +295,7 @@ export class UsageSync {
         this.preparedAccount = this.store.owner;
       }
       if (upload) {
-        let pending = this.store.pending(providers);
+        let pending = this.store.pending();
         const counts = this.store.counts();
         this.progress = { operation: "save", phase: "saving", completed: 0, total: counts.pending - counts.conflicts - counts.invalid };
         while (pending.length) {
@@ -366,7 +322,7 @@ export class UsageSync {
           }
           // Only the rows this pass sent count as progress: a source the server
           // refuses to accept stays pending and is reported instead of retried.
-          const next = this.store.pending(providers);
+          const next = this.store.pending();
           // A row the server keeps answering about must change something — its own
           // version, its revision, or the provider it is reported as — or the save
           // would spin forever. Parking the server's copy as a conflict keeps the
@@ -380,16 +336,15 @@ export class UsageSync {
               const answer = results.find((result) => result.record.recordId === row.record.recordId);
               if (answer) this.store.hold(row.record.recordId, answer);
             }
-            const stuck = this.store.pending(providers)
+            const stuck = this.store.pending()
               .filter((row) => sent.get(row.record.recordId) === this.stateOf(row));
             if (stuck.length) break;
           }
-          pending = this.store.pending(providers);
+          pending = this.store.pending();
           const remaining = this.store.counts();
           this.progress.total = this.progress.completed + remaining.pending - remaining.conflicts - remaining.invalid;
         }
       }
-      if (upload) this.reportHeldBack(this.unsupportedProviders(providers));
       this.lastCompleted = upload ? "save" : "restore";
     })()
       .catch((error: unknown) => {
