@@ -55,10 +55,7 @@ export function CloudSettings(): React.JSX.Element {
     }
   }
   const visibleError = error || status?.error || loadError;
-  const heldBack = (status?.heldBack ?? []).map(sourceLabel);
-  // `pending` counts every local observation; the ones behind `heldBack` cannot
-  // be uploaded until a rule names an official provider for them.
-  const waiting = Math.max(0, (status?.pending ?? 0) - (status?.heldBackCount ?? 0));
+  const waiting = status?.pending ?? 0;
   const busy = working || Boolean(status?.busy);
   const operation = action === "save" || action === "restore" ? action : status?.progress?.operation;
   const saving = busy && operation === "save";
@@ -76,9 +73,7 @@ export function CloudSettings(): React.JSX.Element {
           ? "Choose which version to keep below to finish saving."
           : waiting
             ? `${status?.lastCompleted === "save" ? "Saved to cloud. " : status?.lastCompleted === "restore" ? "History restored. " : ""}${waiting} ${waiting === 1 ? "change waiting" : "changes waiting"} to be saved.`
-            : status?.heldBackCount
-              ? "Everything the server accepts is saved to cloud."
-              : status?.lastCompleted === "restore" ? "History restored." : "All changes saved to cloud.";
+            : status?.lastCompleted === "restore" ? "History restored." : "All changes saved to cloud.";
   return (
     <Card variant="transparent">
       <Card.Header>
@@ -159,16 +154,6 @@ export function CloudSettings(): React.JSX.Element {
               <p>{message}</p>
               {(saving || restoring) && (
                 <p>This may take a minute or two. You can keep using Glyphi.</p>
-              )}
-              {heldBack.length > 0 && (
-                <p>
-                  {status.heldBackCount > 0
-                    ? `${status.heldBackCount.toLocaleString()} ${status.heldBackCount === 1 ? "change" : "changes"} from `
-                    : ""}
-                  {heldBack.join(", ")} {heldBack.length === 1 ? "stays" : "stay"} on this
-                  computer: the server does not model {heldBack.length === 1 ? "that source" : "those sources"} yet,
-                  so {heldBack.length === 1 ? "it is" : "they are"} not uploaded.
-                </p>
               )}
             </div>
             {status.conflicts.map((conflict) => (
@@ -296,11 +281,6 @@ export function CloudSettings(): React.JSX.Element {
       </Card.Content>
     </Card>
   );
-}
-
-/** The engine reports source ids; the settings page shows them as names. */
-function sourceLabel(id: string): string {
-  return id.charAt(0).toUpperCase() + id.slice(1);
 }
 
 function CloudSpinner(): React.JSX.Element {
