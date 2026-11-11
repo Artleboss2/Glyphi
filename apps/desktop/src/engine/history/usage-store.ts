@@ -369,7 +369,10 @@ export class UsageStore {
           return pending;
         }
         bytes += size;
-        pending.push({ record, revision: local.revision, localVersion: local.localVersion });
+        // A record that was never uploaded has no cloud revision yet, and the
+        // server refuses anything below 1 — which used to reject the whole
+        // batch as invalid records. Every newer local copy claims the next one.
+        pending.push({ record, revision: Math.max(1, local.revision + 1), localVersion: local.localVersion });
       }
     }
     return pending;
@@ -454,6 +457,17 @@ export class UsageStore {
       [this.owner]
     );
     return { pending: Number(row?.pending) + this.statistics.pendingCount(), conflicts: Number(row?.conflicts), invalid: Number(row?.invalid) };
+  }
+  /**
+   * Marks the whole local history as never saved. Used when the account turns
+   * out to hold nothing on the server, so the next save uploads all of it.
+   */
+  requeueAll(): void {
+    this.db.run(
+      "UPDATE usage_record SET saved_version = 0, cloud_revision = 0 WHERE owner IN (?, '') AND saved_version > 0",
+      [this.owner]
+    );
+    this.onChange?.();
   }
   /**
    * Parks a pending row as a conflict with the copy the server answered about.
