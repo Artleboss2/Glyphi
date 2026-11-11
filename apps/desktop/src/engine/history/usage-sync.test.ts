@@ -419,7 +419,7 @@ describe("usage cloud storage", () => {
   });
 
 
-  it("holds back a source the server does not model instead of failing the save", async () => {
+  it("uploads every source under its own name, without naming the server's list", async () => {
     const local = store();
     local.statistics.collect("freebuff", "local", "replica", analytics());
     const own = day();
@@ -435,16 +435,14 @@ describe("usage cloud storage", () => {
     await service.configure("a", cloud);
     service.setAutomatic(false);
     await service.save();
-    // Codex usage is saved; Freebuff's stays here under its own name.
+    // Both sources reach the server: the Codex day record and Freebuff's own
+    // observations, which is what a public profile counts.
     expect(cloud.rows.size).toBe(1);
-    expect(facts).toEqual([]);
+    expect([...cloud.rows.values()].map(row => row.record.providerId)).toEqual(["codex"]);
+    expect(facts).toEqual(["freebuff", "freebuff"]);
     expect(service.status().error).toBeNull();
-    expect(service.status().heldBack).toEqual(["freebuff"]);
-    expect(local.statistics.pendingCount()).toBe(2);
-    // The unsaved observations are reported apart from the counter, so a source
-    // the server does not model never reads as a save that keeps failing.
-    expect(service.status().pending).toBe(2);
-    expect(service.status().heldBackCount).toBe(2);
+    expect(local.statistics.pendingCount()).toBe(0);
+    expect(service.status().pending).toBe(0);
   });
 
   it("reports a source without its own rule through the first saved mix", async () => {
@@ -476,13 +474,11 @@ describe("usage cloud storage", () => {
     expect(facts.every(fact => fact.providerId === "claude")).toBe(true);
     expect(facts.every(fact => fact.modelKey === undefined || fact.modelKey === "claude-opus-5")).toBe(true);
     expect(cloud.rows.size).toBe(1);
-    expect(service.status().heldBack).toEqual([]);
-    expect(service.status().heldBackCount).toBe(0);
     expect(local.statistics.pendingCount()).toBe(0);
     expect(local.pendingCount(["codex", "freebuff"])).toBe(0);
   });
 
-  it("keeps the automatic timer idle while only unmapped sources are pending", async () => {
+  it("wakes the automatic timer for a source with no reporting rule", async () => {
     vi.useFakeTimers();
     const local = store();
     local.statistics.collect("freebuff", "local", "replica", analytics());
@@ -492,8 +488,8 @@ describe("usage cloud storage", () => {
     const service = sync(local);
     await service.configure("a", cloud);
     await vi.advanceTimersByTimeAsync(2 * HOUR);
-    expect(saveFacts).not.toHaveBeenCalled();
-    expect(service.status()).toMatchObject({ pending: 2, heldBackCount: 2, busy: false });
+    expect(saveFacts).toHaveBeenCalledOnce();
+    expect(service.status()).toMatchObject({ pending: 0, busy: false });
   });
 
   it("inserts a record that only exists in the cloud under the provider it was stored as", async () => {
