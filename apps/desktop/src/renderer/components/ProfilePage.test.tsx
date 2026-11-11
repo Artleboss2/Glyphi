@@ -237,8 +237,6 @@ function status(signedIn: CloudStatus["account"], profile: CloudProfileStatus): 
     accountId: signedIn?.id ?? null,
     automatic: true,
     busy: false,
-    heldBack: [],
-    heldBackCount: 0,
     conflicts: [],
     error: null,
     lastCompleted: null,

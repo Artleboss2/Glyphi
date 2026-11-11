@@ -51,8 +51,6 @@ function cloud(state: CloudStatus["profile"]["state"], automatic = true): CloudS
     accountId: state === "signed-out" ? null : "user_1",
     automatic,
     busy: false,
-    heldBack: [],
-    heldBackCount: 0,
     conflicts: [],
     error: null,
     lastCompleted: null,
