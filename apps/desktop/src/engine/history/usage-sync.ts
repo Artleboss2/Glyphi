@@ -248,12 +248,32 @@ export class UsageSync {
         }
         this.store.claimLocal();
         this.maybeReassertRecentDays();
-        // An empty day is not usage. Uploading it made the server list a saved
-        // day with no data, which the public profile reports as incomplete.
-        this.store.skipEmptyDays();
         // Pruning only shrinks the upload. A stopped history writer must not keep pending facts from saving.
         await this.store.statistics.dropRepricedCopies(() => this.closed || this.stopping).catch(() => undefined);
         if (this.closed || this.stopping) return;
+      }
+      // The account is read before anything is uploaded, so a save knows
+      // whether the server already holds this history at all.
+      if (!upload || this.preparedAccount !== this.store.owner) {
+        this.progress = { operation: upload ? "save" : "restore", phase: "reading", completed: 0, total: null };
+        let after: string | null = null;
+        let empty = true;
+        do {
+          const page = await cloud.read(after);
+          if (this.closed || this.stopping) return;
+          if (page.records.length) empty = false;
+          for (const record of page.records) this.store.merge(record, unaliasUsageRecord);
+          if (page.next !== null && ((after !== null && page.next <= after) || page.records.length === 0)) {
+            throw new Error("Invalid cloud page.");
+          }
+          this.progress!.completed += page.records.length;
+          after = page.next;
+        } while (after !== null);
+        // An account with nothing on the server gets this computer's whole
+        // history, not just the days collected since the last sign-in. Saves
+        // used to stay pending forever on an account they never reached.
+        if (upload && empty) this.store.requeueAll();
+        this.preparedAccount = this.store.owner;
       }
       // Observations are not restored. The server already holds them, the local
       // day records carry the same totals, and re-reading them used to copy the
@@ -279,22 +299,10 @@ export class UsageSync {
           this.progress!.completed += saved.length;
         }
       }
-      if (!upload || this.preparedAccount !== this.store.owner) {
-        this.progress = { operation: upload ? "save" : "restore", phase: "reading", completed: 0, total: null };
-        let after: string | null = null;
-        do {
-          const page = await cloud.read(after);
-          if (this.closed || this.stopping) return;
-          for (const record of page.records) this.store.merge(record, unaliasUsageRecord);
-          if (page.next !== null && ((after !== null && page.next <= after) || page.records.length === 0)) {
-            throw new Error("Invalid cloud page.");
-          }
-          this.progress!.completed += page.records.length;
-          after = page.next;
-        } while (after !== null);
-        this.preparedAccount = this.store.owner;
-      }
       if (upload) {
+        // An empty day is not usage. Uploading it made the server list a saved
+        // day with no data, which the public profile reports as incomplete.
+        this.store.skipEmptyDays();
         let pending = this.store.pending();
         const counts = this.store.counts();
         this.progress = { operation: "save", phase: "saving", completed: 0, total: counts.pending - counts.conflicts - counts.invalid };
@@ -394,6 +402,21 @@ export class UsageSync {
   }
 }
 
+/**
+ * The one line the server sent with a refusal. The API answers every failure
+ * with `{ error, message }`, and a bare status code is impossible to act on.
+ */
+async function serverReason(response: Response): Promise<string> {
+  const text = await response.text().catch(() => "");
+  try {
+    const body = JSON.parse(text) as { message?: unknown; error?: unknown };
+    const reason = typeof body.message === "string" && body.message ? body.message : body.error;
+    return typeof reason === "string" ? reason.slice(0, 200) : "";
+  } catch {
+    return "";
+  }
+}
+
 export function httpUsageCloud(baseURL: string, token: string): UsageCloud {
   const request = async (path: string, body?: unknown): Promise<unknown> => {
     const response = await fetch(`${baseURL}${path}`, {
@@ -403,12 +426,13 @@ export function httpUsageCloud(baseURL: string, token: string): UsageCloud {
       signal: AbortSignal.timeout(20_000),
       redirect: "error"
     });
-    if (!response.ok)
+    if (!response.ok) {
+      if (response.status === 401) throw new Error("Your session expired. Sign in again.");
+      const reason = await serverReason(response);
       throw new Error(
-        response.status === 401
-          ? "Your session expired. Sign in again."
-          : `Cloud request failed (${response.status}). Try again.`
+        `Cloud request failed (${response.status})${reason ? `: ${reason}` : ""}. Try again.`
       );
+    }
     const reader = response.body?.getReader();
     if (!reader) throw new Error("Empty cloud response.");
     let size = 0;
