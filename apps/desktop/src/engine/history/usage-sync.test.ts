@@ -47,7 +47,8 @@ function remoteCloud(): UsageCloud & { rows: Map<string, CloudRecord>; saves: nu
         const existing = this.rows.get(sent.record.recordId);
         if (existing && sameUsage(existing.record, sent.record))
           return { ...existing, status: "saved" as const };
-        if (existing && existing.revision !== sent.revision)
+        // What the hosted function does: a copy at or above the sent revision wins.
+        if (existing && existing.revision >= sent.revision)
           return { ...existing, status: "conflict" as const };
         const saved = { record: structuredClone(sent.record), revision: (existing?.revision ?? 0) + 1 };
         this.rows.set(saved.record.recordId, saved);
@@ -124,6 +125,41 @@ describe("usage cloud storage", () => {
     await service.save();
     expect(local.pending()).toEqual([]);
     expect(cloud.rows.size).toBe(120);
+  });
+
+  it("claims the first cloud revision for a record that was never uploaded", async () => {
+    const local = store();
+    local.selectAccount("a");
+    local.put(day());
+    // The server refuses a revision below 1, so an empty cloud revision is sent
+    // as the first one instead of failing the whole batch as invalid records.
+    expect(local.pending()[0].revision).toBe(1);
+    const cloud = remoteCloud();
+    const service = sync(local);
+    await service.configure("a", cloud);
+    service.setAutomatic(false);
+    await service.save();
+    expect([...cloud.rows.values()][0].revision).toBe(1);
+  });
+
+  it("re-uploads the whole history when the account holds nothing", async () => {
+    const local = store();
+    local.selectAccount("a");
+    local.put(day());
+    const first = remoteCloud();
+    const service = sync(local);
+    await service.configure("a", first);
+    service.setAutomatic(false);
+    await service.save();
+    expect(first.rows.size).toBe(1);
+    expect(local.pending()).toEqual([]);
+
+    // The same account answers with nothing at all: the days this computer
+    // already calls saved have to go up again, or the profile stays empty.
+    const second = remoteCloud();
+    await service.configure("a", second);
+    await service.save();
+    expect(second.rows.size).toBe(1);
   });
 
   it("drains every observation when the server accepts only 40 per request", async () => {
@@ -415,7 +451,8 @@ describe("usage cloud storage", () => {
     local.put(day(200));
     local.acknowledge(sent, { record: sent.record, revision: 1 });
     expect(local.pending()[0].record).toMatchObject({ totals: { totalTokens: 200 } });
-    expect(local.pending()[0].revision).toBe(1);
+    // The acknowledged revision is taken, so the next copy claims 2.
+    expect(local.pending()[0].revision).toBe(2);
   });
 
 
@@ -425,6 +462,10 @@ describe("usage cloud storage", () => {
     const own = day();
     own.providerId = "codex";
     local.put(own);
+    const theirs = day(7_000_000);
+    theirs.providerId = "freebuff";
+    theirs.recordId = "ffffffff-ffff-4fff-8fff-fffffffffff1";
+    local.put(theirs);
     const cloud = remoteCloud();
     const facts: string[] = [];
     cloud.saveFacts = async values => {
@@ -435,10 +476,9 @@ describe("usage cloud storage", () => {
     await service.configure("a", cloud);
     service.setAutomatic(false);
     await service.save();
-    // Both sources reach the server: the Codex day record and Freebuff's own
-    // observations, which is what a public profile counts.
-    expect(cloud.rows.size).toBe(1);
-    expect([...cloud.rows.values()].map(row => row.record.providerId)).toEqual(["codex"]);
+    // Freebuff's day is what a public profile counts, and it used to stay on
+    // this computer because the server had no name for the source.
+    expect([...cloud.rows.values()].map(row => row.record.providerId).sort()).toEqual(["codex", "freebuff"]);
     expect(facts).toEqual(["freebuff", "freebuff"]);
     expect(service.status().error).toBeNull();
     expect(local.statistics.pendingCount()).toBe(0);
@@ -519,7 +559,8 @@ describe("usage cloud storage", () => {
     expect(local.pending()).toEqual([]);
     expect(local.get(day().recordId)?.conflict?.record).toMatchObject({ totals: { totalTokens: 300 } });
     local.resolve(day().recordId, "local");
-    expect(local.pending()[0]).toMatchObject({ revision: 2, record: { totals: { totalTokens: 200 } } });
+    // Cloud holds revision 2, so the kept local copy has to claim 3.
+    expect(local.pending()[0]).toMatchObject({ revision: 3, record: { totals: { totalTokens: 200 } } });
   });
   it("keeps downloaded records and checkpoints isolated by account", () => {
     const local = store();
