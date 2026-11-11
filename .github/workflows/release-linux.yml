@@ -1,0 +1,223 @@
+name: Release Linux
+
+# Linux has shipped since 0.4: AppImage plus deb and rpm, x64 and arm64. This
+# pipeline builds and publishes those assets on its own, so a Windows or macOS
+# problem never holds a Linux build back.
+
+on:
+  push:
+    branches: [main]
+    paths: ["apps/desktop/package.json"]
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the built artifacts as a GitHub release
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-linux-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
+  POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+
+jobs:
+  gate:
+    name: Decide what this run publishes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      release: ${{ steps.decide.outputs.release }}
+      tag: ${{ steps.decide.outputs.tag }}
+      version: ${{ steps.decide.outputs.version }}
+      sha: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+      - name: Compare the package version against published releases
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_REQUESTED: ${{ inputs.publish == true }}
+        shell: bash
+        run: |-
+          set -euo pipefail
+          version="$(node -p "require('./apps/desktop/package.json').version")"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::apps/desktop/package.json has an unusable version: ${version}"
+            exit 1
+          fi
+          build=false
+          release=false
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            build=true
+            release="$PUBLISH_REQUESTED"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            if [[ "$GITHUB_REF_NAME" != "desktop-v${version}" ]]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match apps/desktop/package.json (${version}). Expected desktop-v${version}."
+              exit 1
+            fi
+            build=true
+            release=true
+          else
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+              --jq '.[].tag_name' > "$RUNNER_TEMP/published-tags"
+            if ! grep -Fxq "desktop-v${version}" "$RUNNER_TEMP/published-tags"; then
+              build=true
+              release=true
+            fi
+          fi
+
+          {
+            echo "build=$build"
+            echo "release=$release"
+            echo "tag=desktop-v${version}"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+          echo "### Glyphi ${version} — Linux" >> "$GITHUB_STEP_SUMMARY"
+          echo "- build: \`${build}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- publish: \`${release}\` (\`desktop-v${version}\`)" >> "$GITHUB_STEP_SUMMARY"
+
+  linux:
+    name: Linux ${{ matrix.arch }}
+    needs: gate
+    if: ${{ needs.gate.outputs.build == 'true' }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: package.json
+      - name: Install packaging tools
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y fakeroot rpm squashfs-tools xvfb fuse3
+      - run: bun ci
+      - run: bun run test
+        if: ${{ matrix.arch == 'x64' }}
+      - name: Check PostHog token
+        shell: bash
+        run: |-
+          if [ -z "${POSTHOG_PROJECT_TOKEN}" ]; then
+            echo "::warning::POSTHOG_PROJECT_TOKEN is not set: this build ships with anonymous telemetry disabled. Add the repository secret to include it."
+          fi
+      - run: bun run desktop:make -- --platform=linux --arch=${{ matrix.arch }}
+      - name: Packaged smoke test
+        shell: bash
+        # Restores what dpkg and rpm set on install; extracting as the runner user drops it.
+        run: |-
+          set -euo pipefail
+          app_dir="apps/desktop/out/Glyphi-linux-${{ matrix.arch }}"
+          sudo chown root:root "$app_dir/chrome-sandbox"
+          sudo chmod 4755 "$app_dir/chrome-sandbox"
+          xvfb-run -a env GLYPHI_SMOKE_TEST=1 "$app_dir/Glyphi"
+      - name: AppImage smoke test
+        shell: bash
+        # The AppImage picks its sandbox at runtime, so run the artifact itself, not the tree above.
+        run: |-
+          set -euo pipefail
+          appimage="$(find apps/desktop/out/make -name '*.AppImage' -print -quit)"
+          if [[ -z "$appimage" ]]; then
+            echo "::error::No AppImage was produced for ${{ matrix.arch }}"
+            exit 1
+          fi
+          xvfb-run -a env GLYPHI_SMOKE_TEST=1 "$appimage"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-linux-${{ matrix.arch }}
+          path: apps/desktop/out/make/**
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Publish Linux assets
+    needs: [gate, linux]
+    if: ${{ success() && needs.gate.outputs.release == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.gate.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.gate.outputs.version }}
+      RELEASE_SHA: ${{ needs.gate.outputs.sha }}
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: desktop-linux-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Verify the artifact set the update mirror expects
+        shell: bash
+        run: |-
+          set -euo pipefail
+          matches() { find release-artifacts -type f "$@" | wc -l | tr -d ' '; }
+          failed=0
+          for arch in x64 arm64; do
+            if [[ "$(matches -iname '*.AppImage' -ipath "*${arch}*")" != "1" ]]; then
+              echo "::error::Linux ${arch} AppImage: expected 1 artifact"
+              failed=1
+            fi
+          done
+          if [[ "$failed" -ne 0 ]]; then
+            echo "Artifacts produced by this run:" >&2
+            find release-artifacts -type f | sort >&2
+            exit 1
+          fi
+      - name: Generate checksums
+        shell: bash
+        run: |-
+          set -euo pipefail
+          published_name() { printf '%s' "$1" | tr -c 'A-Za-z0-9._-' '.'; }
+          checksum_file="release-artifacts/SHA256SUMS-linux"
+          : > "$checksum_file"
+          while IFS= read -r -d '' file; do
+            printf '%s  %s\n' "$(sha256sum "$file" | cut -d' ' -f1)" "$(published_name "$(basename "$file")")" >> "$checksum_file"
+          done < <(find release-artifacts -type f -print0 | sort -z)
+          sort -k2 -o "$checksum_file" "$checksum_file"
+          echo "Recorded $(wc -l < "$checksum_file" | tr -d ' ') Linux asset checksums."
+      - name: Create or reuse the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |-
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --target "$RELEASE_SHA" \
+              --title "Glyphi $RELEASE_VERSION" \
+              --generate-notes || true
+          fi
+          gh release view "$RELEASE_TAG" >/dev/null
+      - name: Upload Linux assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |-
+          set -euo pipefail
+          find release-artifacts -type f -print0 | xargs -0 gh release upload "$RELEASE_TAG" --clobber
