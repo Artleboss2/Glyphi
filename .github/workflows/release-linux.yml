@@ -167,6 +167,9 @@ jobs:
       RELEASE_VERSION: ${{ needs.gate.outputs.version }}
       RELEASE_SHA: ${{ needs.gate.outputs.sha }}
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           pattern: desktop-linux-*
