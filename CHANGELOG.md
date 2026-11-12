@@ -3,6 +3,33 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## 0.5.2 — 2026-11-12
+
+### Fixed
+
+- **Cloud save stops calling a large batch corrupt.** The API refused any request body over 512 KiB
+  and answered `invalid_records`, which read like damaged data. An oversized body now answers
+  `payload_too_large`, the limit is 2 MiB, a refused record names its index and field, and both
+  record envelopes are accepted.
+- **A save batch is measured by the body it becomes.** Records were sized one at a time, without the
+  JSON envelope or the commas between them, so a full batch could cross the server's limit without
+  anything noticing. Batches are budgeted at 384 KiB of the real body, and a restore response has
+  its own limit instead of borrowing the save one.
+- **The card picker's dropdown is readable.** Native options inherited cream text on a dark page and
+  looked ghosted out.
+
+### Added
+
+- **Your own card colours.** `accent` and `cell` on a card URL, with pickers in the website builder
+  and in the app. The heatmap ramp is generated from one colour, and invalid values are ignored.
+- **Features, pricing and FAQ pages**, an `llms.txt`, one schema.org graph and a wider sitemap.
+
+### Changed
+
+- **The beta badge is gone.** Glyphi has saved, restored and published enough to drop it from the
+  header and the footer.
+- **Both card builders open in dark**, matching the app and the site.
+
 ## 0.5.1 — 2026-11-10
 
 ### Fixed
