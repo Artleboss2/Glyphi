@@ -349,7 +349,9 @@ export class UsageStore {
     // An explicitly empty scope means nothing is uploadable, not everything.
     if (providers && !providers.length) return [];
     const pending: PendingRecord[] = [];
-    let bytes = 0;
+    // The API caps the HTTP body, so its envelope is counted before the first
+    // record; measuring records alone let a full batch overshoot it.
+    let bytes = Buffer.byteLength('{"records":[]}', "utf8");
     let after: string | null = null;
     const scope = providers ? ` AND provider IN (${providers.map(() => "?").join(",")})` : "";
     while (pending.length < USAGE_BATCH_SIZE) {
@@ -363,8 +365,9 @@ export class UsageStore {
         const local = this.decodeForSave(row);
         if (!local) continue;
         const record = this.validatePending(local.record);
-        const size = Buffer.byteLength(JSON.stringify({ record, revision: local.revision }), "utf8");
-        if (bytes + size > USAGE_MAX_BYTES - 4096) {
+        // The comma that joins this record to the ones before it is part of the body.
+        const size = Buffer.byteLength(JSON.stringify({ record, revision: local.revision }), "utf8") + 1;
+        if (bytes + size > USAGE_MAX_BYTES) {
           if (!pending.length) throw new Error("A usage record is too large to save.");
           return pending;
         }
