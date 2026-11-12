@@ -97,8 +97,13 @@ describe("Profile page", () => {
     const html = render(status(account, { state: "public", handle: "ada_l" }));
 
     expect(html).toContain("Put your usage in your README");
-    expect(html).toContain("[![AI Coding Activity on Glyphi](https://glyphi.xyz/api/cards/ada_l/heatmap.svg?theme=light)](https://glyphi.xyz/@ada_l)");
-    expect(html).toContain('src="https://glyphi.xyz/api/cards/ada_l/heatmap.svg?theme=light"');
+    // Dark, with the theme's own colours written into the URL so the markdown
+    // and the preview are the same picture.
+    expect(html).toContain(
+      "[![AI Coding Activity on Glyphi](https://glyphi.xyz/api/cards/ada_l/heatmap.svg?theme=dark&amp;accent=3fb950&amp;cell=161b22)](https://glyphi.xyz/@ada_l)"
+    );
+    expect(html).toContain('src="https://glyphi.xyz/api/cards/ada_l/heatmap.svg?theme=dark&amp;accent=3fb950&amp;cell=161b22"');
+    expect(html).toContain("Colour of used days");
     expect(html).toContain("Copy Markdown");
     expect(html).toContain("More card styles");
     expect(html).not.toContain("Cloud save is off");
