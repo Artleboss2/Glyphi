@@ -3,6 +3,40 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## 0.5.3 — 2026-11-12
+
+The app itself is unchanged in this build. This release carries the cloud and website work that
+landed after 0.5.2, so the version on the download page, the API and the site stay in step.
+
+### Added
+
+- **An owner-only dashboard.** The site can now show every account, its saved tokens, its cost, its
+  active days and the last thirty days behind them, plus the tools and models that produced them.
+  From there the owner can publish or hide a profile, revoke every session, empty a cloud save, or
+  delete the account outright. Every action is gated twice: the page checks the session identity
+  before it renders, and the API checks it again before it touches the database, answering `404` to
+  everyone else.
+- **A sponsorships page.** What a sponsor appears next to, what it pays for, and what it never buys:
+  no tracking, no paid place in the leaderboard, no access to anything the app reads.
+- **A page for the question people actually type**, “best AI usage tracker”, with the criteria that
+  separate a real tracker from a pretty dashboard, a comparison table and an FAQ.
+
+### Changed
+
+- **The database answers only to the API.** The `glyphi` schema, every table and every `glyphi_api_*`
+  function are revoked from `anon` and `authenticated` — including functions added later, because the
+  revoke runs over all of them. Only the Edge Function's `service_role` reaches the data.
+- **Canonicals, Open Graph and the sitemap point at `www.glyphi.xyz`**, the host that actually serves
+  the site; the bare domain answers with a `308` and had been advertised as canonical anyway.
+- **The sitemap is dated by content**, not by deploy, so a release no longer claims that every page
+  changed.
+
+### Fixed
+
+- **The maintenance sweep read tables that no longer exist.** It still referenced the device-code
+  table dropped in 0.2 and a `rate_limit` column that never existed, so expired sessions and OAuth
+  tickets were never cleaned.
+
 ## 0.5.2 — 2026-11-12
 
 ### Fixed
