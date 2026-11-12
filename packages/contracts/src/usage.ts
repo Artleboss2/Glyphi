@@ -76,7 +76,17 @@ export interface SaveResult extends CloudRecord {
   status: "saved" | "conflict";
 }
 export const USAGE_BATCH_SIZE = 25;
-export const USAGE_MAX_BYTES = 512 * 1024;
+/**
+ * The hosted API refuses an HTTP body above its own cap (512 KiB for a while,
+ * 2 MiB now), and it used to answer `invalid_records` for an oversized one, so
+ * a batch that overshot looked like corrupt data instead of a big payload.
+ * A batch is sized here with room for the JSON envelope and commas, which the
+ * per-record measurement alone did not cover.
+ */
+export const USAGE_SAVE_BODY_LIMIT = 512 * 1024;
+export const USAGE_MAX_BYTES = 384 * 1024;
+/** A restore page is not a save body; only a broken server sends this much. */
+export const USAGE_MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
 
 // Public display catalog only. Private saved records retain tool-reported identifiers.
 export const PUBLIC_MODELS = new Set([
