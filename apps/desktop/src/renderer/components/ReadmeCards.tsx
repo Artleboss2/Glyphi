@@ -4,6 +4,7 @@ import { trackGrowth } from "../profile-state";
 import {
   EMBEDS_URL,
   README_CARDS,
+  README_DEFAULT_COLORS,
   README_PERIODS,
   readmeCardMarkdown,
   readmeCardSize,
@@ -23,11 +24,18 @@ export function ReadmeCards({ cloudSaveOff, handle, onOpenExternal }: {
 }): React.JSX.Element {
   const [card, setCard] = useState<ReadmeCard>("heatmap");
   const [period, setPeriod] = useState<ReadmePeriod>("all");
-  const [theme, setTheme] = useState<ReadmeTheme>("light");
+  const [theme, setTheme] = useState<ReadmeTheme>("dark");
+  // Null means "the theme's own colour", so switching appearance keeps a
+  // sensible card until the reader picks something.
+  const [accent, setAccent] = useState<string | null>(null);
+  const [cell, setCell] = useState<string | null>(null);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const imageUrl = readmeCardUrl(handle, card, period, theme);
-  const markdown = readmeCardMarkdown(handle, card, period, theme);
+  const defaults = README_DEFAULT_COLORS[theme];
+  const colors = { accent: accent ?? defaults.accent, cell: cell ?? defaults.cell };
+  const custom = accent !== null || cell !== null;
+  const imageUrl = readmeCardUrl(handle, card, period, theme, colors);
+  const markdown = readmeCardMarkdown(handle, card, period, theme, colors);
 
   useEffect(() => {
     if (!copied) return;
@@ -122,10 +130,47 @@ export function ReadmeCards({ cloudSaveOff, handle, onOpenExternal }: {
                 selectionMode="single"
                 size="sm"
               >
-                <ToggleButton id="light">Light</ToggleButton>
                 <ToggleButton id="dark">Dark</ToggleButton>
+                <ToggleButton id="light">Light</ToggleButton>
               </ToggleButtonGroup>
             </div>
+          </div>
+          <div className="atlas-readme-cards__field">
+            <span className="atlas-readme-cards__label">Colours</span>
+            <div className="atlas-readme-cards__colours">
+              <label className="atlas-readme-cards__colour">
+                <input
+                  aria-label="Colour of used days"
+                  onChange={(event) => choose(() => setAccent(event.target.value))}
+                  type="color"
+                  value={accent ?? defaults.accent}
+                />
+                <span>
+                  <strong>Used days</strong>
+                  <small>The bars and the busiest squares</small>
+                </span>
+              </label>
+              <label className="atlas-readme-cards__colour">
+                <input
+                  aria-label="Colour of empty days"
+                  onChange={(event) => choose(() => setCell(event.target.value))}
+                  type="color"
+                  value={cell ?? defaults.cell}
+                />
+                <span>
+                  <strong>Empty days</strong>
+                  <small>The squares with no usage</small>
+                </span>
+              </label>
+            </div>
+            <button
+              className="atlas-readme-cards__reset"
+              disabled={!custom}
+              onClick={() => choose(() => { setAccent(null); setCell(null); })}
+              type="button"
+            >
+              Back to Glyphi colours
+            </button>
           </div>
           <div className="atlas-readme-cards__field">
             <label className="atlas-readme-cards__label" htmlFor="readme-markdown">Markdown</label>
