@@ -441,6 +441,58 @@
   min-width: 11rem;
 }
 
+.atlas-readme-cards__colours {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+}
+
+.atlas-readme-cards__colour {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.atlas-readme-cards__colour input[type="color"] {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.4rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.atlas-readme-cards__colour strong {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.atlas-readme-cards__colour small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.atlas-readme-cards__reset {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: underline;
+}
+
+.atlas-readme-cards__reset[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 .atlas-readme-cards__hint {
   margin: 0;
   color: var(--muted);
