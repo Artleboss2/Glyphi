@@ -18,19 +18,56 @@ export type ReadmeCard = keyof typeof README_CARDS;
 export type ReadmePeriod = keyof typeof README_PERIODS;
 export type ReadmeTheme = "light" | "dark";
 
+/** `accent` colours the strongest square and the bars, `cell` an empty day. */
+export interface ReadmeColors {
+  accent?: string;
+  cell?: string;
+}
+
+export const README_DEFAULT_COLORS: Record<ReadmeTheme, Required<ReadmeColors>> = {
+  light: { accent: "16a34a", cell: "ebedf0" },
+  dark: { accent: "3fb950", cell: "161b22" }
+};
+
 export const EMBEDS_URL = `${PROFILE_SITE}/account/embeds`;
 
 export function readmeCardSize(card: ReadmeCard): { width: number; height: number } {
   return { width: card === "heatmap" ? 720 : 460, height: card === "heatmap" ? 220 : card === "tokens" ? 244 : 368 };
 }
 
+/** Six hex digits, no `#`, the way the card URL carries a colour. */
+export function readmeColor(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const clean = value.trim().replace(/^#/u, "").toLowerCase();
+  return /^[0-9a-f]{6}$/u.test(clean) ? clean : null;
+}
+
 /** The activity card always covers the last year, so it takes no period. */
-export function readmeCardUrl(handle: string, card: ReadmeCard, period: ReadmePeriod, theme: ReadmeTheme): string {
-  const params = new URLSearchParams({ ...(card === "heatmap" ? {} : { period }), theme });
+export function readmeCardUrl(
+  handle: string,
+  card: ReadmeCard,
+  period: ReadmePeriod,
+  theme: ReadmeTheme,
+  colors: ReadmeColors = {}
+): string {
+  const accent = readmeColor(colors.accent);
+  const cell = readmeColor(colors.cell);
+  const params = new URLSearchParams({
+    ...(card === "heatmap" ? {} : { period }),
+    theme,
+    ...(accent ? { accent } : {}),
+    ...(cell ? { cell } : {})
+  });
   return `${PROFILE_SITE}/api/cards/${encodeURIComponent(handle)}/${card}.svg?${params}`;
 }
 
 /** The same Markdown as the website's builder: the card links to the profile. */
-export function readmeCardMarkdown(handle: string, card: ReadmeCard, period: ReadmePeriod, theme: ReadmeTheme): string {
-  return `[![${README_CARDS[card].title} on Glyphi](${readmeCardUrl(handle, card, period, theme)})](${PROFILE_SITE}/@${handle})`;
+export function readmeCardMarkdown(
+  handle: string,
+  card: ReadmeCard,
+  period: ReadmePeriod,
+  theme: ReadmeTheme,
+  colors: ReadmeColors = {}
+): string {
+  return `[![${README_CARDS[card].title} on Glyphi](${readmeCardUrl(handle, card, period, theme, colors)})](${PROFILE_SITE}/@${handle})`;
 }
