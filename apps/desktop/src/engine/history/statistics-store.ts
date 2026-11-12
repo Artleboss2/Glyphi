@@ -265,11 +265,12 @@ export class StatisticsStore {
       `SELECT payload FROM usage_fact WHERE owner = ? AND saved = 0${scope} ORDER BY id LIMIT ?`,
       [this.owner(), ...(providers ?? []), STATISTICS_BATCH_SIZE]
     );
-    const facts: UsageFact[] = []; let bytes = 0;
+    // Counted as the body the API receives, envelope and separators included.
+    const facts: UsageFact[] = []; let bytes = Buffer.byteLength('{"facts":[]}', "utf8");
     for (const row of rows) {
       const fact = checkFact(JSON.parse(String(row.payload)));
-      const size = Buffer.byteLength(JSON.stringify(fact), "utf8");
-      if (bytes + size > STATISTICS_MAX_BYTES - 4096) break;
+      const size = Buffer.byteLength(JSON.stringify(fact), "utf8") + 1;
+      if (bytes + size > STATISTICS_MAX_BYTES) break;
       bytes += size; facts.push(fact);
     }
     if (rows.length && !facts.length) throw new Error("A usage observation is too large to save.");
