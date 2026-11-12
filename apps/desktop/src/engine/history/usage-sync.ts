@@ -1,7 +1,7 @@
 import type { UsageFact } from "@glyphi/contracts/statistics";
 import {
   USAGE_BATCH_SIZE,
-  USAGE_MAX_BYTES,
+  USAGE_MAX_RESPONSE_BYTES,
   sameUsage,
   validateUsageRecord,
   type CloudRecord,
@@ -441,7 +441,7 @@ export function httpUsageCloud(baseURL: string, token: string): UsageCloud {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > USAGE_MAX_BYTES) {
+      if (size > USAGE_MAX_RESPONSE_BYTES) {
         await reader.cancel();
         throw new Error("Cloud response is too large.");
       }
