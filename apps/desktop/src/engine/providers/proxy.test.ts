@@ -149,7 +149,7 @@ describe("createProxyAdapter", () => {
     const up = createProxyAdapter({ fetch: respond({ ok: true }) });
     const down = createProxyAdapter({ fetch: failing() });
 
-    await expect(up.isAvailable()).resolves.toBe(true);
-    await expect(down.isAvailable()).resolves.toBe(false);
+    await expect(up.isAvailable?.()).resolves.toBe(true);
+    await expect(down.isAvailable?.()).resolves.toBe(false);
   });
 });
