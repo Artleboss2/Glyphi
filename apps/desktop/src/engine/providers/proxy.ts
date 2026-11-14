@@ -18,14 +18,11 @@ import { metric, number, reading, record, type QuotaReading } from "./quota-shar
 export const PROXY_ORIGIN = "http://127.0.0.1:4787";
 const TIMEOUT_MS = 4_000;
 /**
- * The contract allows sixteen metrics per source. Three are the totals and one is
- * reserved for the overflow line, so twelve providers fit by name and everything
- * beyond them is summed rather than dropped: a busy machine can never produce a
- * reading the dashboard rejects.
+ * The contract allows sixteen metrics. Three totals, twelve named providers and one
+ * overflow line add up to exactly that, so the reading always fits however many
+ * providers a machine routes through the proxy in a day.
  */
-const TOTAL_METRICS = 3;
-const MAX_PROVIDER_METRICS = 12;
-const MAX_METRICS = TOTAL_METRICS + MAX_PROVIDER_METRICS + 1;
+const MAX_NAMED_PROVIDERS = 12;
 
 interface ProxyOptions {
   origin?: string;
@@ -107,35 +104,27 @@ export function createProxyAdapter(options: ProxyOptions = {}): ProviderAdapter 
       metric("proxy_input_today", "Input through the proxy today", "tokens", input, null, null, null),
       metric("proxy_output_today", "Output through the proxy today", "tokens", output, null, null, null)
     ];
-    const named = providers.slice(0, MAX_PROVIDER_METRICS);
-    for (const [provider, totals] of named) {
-      // A provider name is user data: bound the id and drop what the contract
-      // cannot accept instead of failing the whole reading.
-      const id = `proxy_${provider}`.slice(0, 64);
-      if (!/^[a-z0-9_.-]+$/iu.test(id)) continue;
-      metrics.push(metric(id, `${provider.slice(0, 48)} through the proxy`, "tokens", totals.input + totals.output, null, null, null));
+    for (const [provider, totals] of providers.slice(0, MAX_NAMED_PROVIDERS)) {
+      metrics.push(metric(`proxy_${provider}`, `${provider} through the proxy`, "tokens", totals.input + totals.output, null, null, null));
     }
-    const overflow = providers.slice(MAX_PROVIDER_METRICS);
+    const overflow = providers.slice(MAX_NAMED_PROVIDERS);
     if (overflow.length > 0) {
-      const others = overflow.reduce((sum, [, totals]) => sum + totals.input + totals.output, 0);
       metrics.push(
         metric(
           "proxy_other",
           `${overflow.length} more ${overflow.length === 1 ? "provider" : "providers"} through the proxy`,
           "tokens",
-          others,
+          overflow.reduce((sum, [, totals]) => sum + totals.input + totals.output, 0),
           null,
           null,
           null
         )
       );
     }
-    // Belt and braces: the reading is trimmed to the contract, never past it.
-    metrics.length = Math.min(metrics.length, MAX_METRICS);
 
     // A proxy that has counted nothing is a real, quiet zero, not a failure: the
     // dashboard should not paint an error on a machine that routes nothing here.
-    if (!metrics.some(Boolean)) {
+    if (providers.length === 0) {
       throw new ProviderError("proxy_idle", "Nothing has gone through the counting proxy today.", false);
     }
     return reading("Counting proxy", metrics);
