@@ -16,6 +16,7 @@ import { createAmpAdapter } from "./amp";
 import { createQoderAdapter } from "./qoder";
 import { createZaiAdapter } from "./zai";
 import { createFreebuffAdapter } from "./freebuff";
+import { createProxyAdapter } from "./proxy";
 
 export function createProviderAdapters(): ProviderAdapter[] {
   const pricingCatalogLoader = createPricingCatalogLoader({ homeDirectory: homedir() });
@@ -28,6 +29,9 @@ export function createProviderAdapters(): ProviderAdapter[] {
     createLocalToolAdapter("pi", { pricingCatalogLoader }),
     createLocalToolAdapter("muse"),
     createFreebuffAdapter({ pricingCatalogLoader }),
+    // Whatever the agent routes through the Rust proxy, including the tools that
+    // write no readable history of their own.
+    createProxyAdapter(),
     createWarpAdapter(), createKimiAdapter(), createKiloAdapter(), createCopilotAdapter(),
     createFactoryAdapter(), createAmpAdapter(), createQoderAdapter(), createZaiAdapter(),
     createJsonFileAdapter("gemini"), createJsonFileAdapter("qwen"),
