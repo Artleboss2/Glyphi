@@ -4,6 +4,7 @@ import path from "node:path";
 import type { DesktopUpdateState } from "../shared/desktop-api";
 import {
   compareVersions,
+  describeUpdateError,
   downloadPageURL,
   latestPublishedVersion,
   newerInstalledVersion,
@@ -86,8 +87,9 @@ export function configureAutoUpdates(hooks: AutoUpdateHooks = {}): DesktopUpdate
   }
 
   function failed(error: unknown): void {
-    console.error(`Update check failed: ${redactUpdateError(error instanceof Error ? error.message : "unknown")}`);
-    publish({ status: "error", error: "Unable to update. Check your connection and try again." });
+    const reason = error instanceof Error ? error.message : "unknown";
+    console.error(`Update check failed: ${redactUpdateError(reason)}`);
+    publish({ status: "error", error: describeUpdateError(error) });
   }
 
   async function check(): Promise<DesktopUpdateState> {

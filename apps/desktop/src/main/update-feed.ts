@@ -163,6 +163,19 @@ export function newerInstalledVersion(execPath: string, runningVersion: string):
   return newest;
 }
 
+/**
+ * The reason a check failed, said plainly. Squirrel reports a dead feed as an
+ * HTTP status or a broken helper process, and "check your connection" hides the
+ * one thing that would tell the user (or us) what actually went wrong.
+ */
+export function describeUpdateError(error: unknown): string {
+  const message = redactUpdateError(error instanceof Error ? error.message : String(error ?? "")).trim();
+  if (!message) return "The updater gave no reason. Try again later.";
+  const exit = /exited with code (-?\d+)/iu.exec(message);
+  if (exit) return `The update helper exited with code ${exit[1]}. Try again later.`;
+  return `${message.replace(/[.\s]+$/u, "")}. Try again later.`;
+}
+
 /** Update endpoints can carry release paths; keep them out of local logs. */
 export function redactUpdateError(message: string): string {
   return message.replace(/https?:\/\/[^\s]+/gu, "[update-url]").slice(0, 300);
