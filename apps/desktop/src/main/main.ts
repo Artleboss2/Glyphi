@@ -55,6 +55,7 @@ import { PublicLeaderboard } from "./public-leaderboard";
 import { DesktopTelemetry } from "./telemetry";
 import { trayLimitLabels } from "./tray-limits";
 import { resizeWidgetBounds } from "./widget-bounds";
+import { startCountingProxy, stopCountingProxy } from "./counting-proxy";
 import { configureAutoUpdates, type DesktopUpdater } from "./updates";
 import { compareVersions, newerInstalledVersion, resolveUpdateSource } from "./update-feed";
 import {
@@ -82,6 +83,10 @@ protocol.registerSchemesAsPrivileged([
 ]);
 app.enableSandbox();
 app.setName("Glyphi");
+// The Rust counting proxy rides in the app: it forwards provider traffic to a
+// loopback port and counts what the providers report, including for a tool that
+// writes no readable history. Missing binary (no Rust toolchain) is not fatal.
+startCountingProxy(process.resourcesPath, app.getPath("userData"));
 if (process.env.GLYPHI_SMOKE_TEST === "1") {
   const directory = mkdtempSync(path.join(tmpdir(), "glyphi-smoke-"));
   app.setPath("userData", directory);
@@ -1871,6 +1876,7 @@ if (squirrelStartup || !hasSingleInstanceLock) {
 });
 
 app.on("will-quit", () => {
+  stopCountingProxy();
   globalShortcut.unregisterAll();
 });
 
