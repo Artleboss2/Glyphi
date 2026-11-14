@@ -23,7 +23,8 @@
     "desktop:build": "turbo run build --filter=@glyphi/desktop",
     "desktop:test": "turbo run test --filter=@glyphi/desktop",
     "desktop:package": "turbo run package --filter=@glyphi/desktop --env-mode=loose --",
-    "desktop:make": "turbo run make --filter=@glyphi/desktop --env-mode=loose --"
+    "proxy:build": "node tooling/build-proxy.mjs",
+    "desktop:make": "node tooling/build-proxy.mjs && turbo run make --filter=@glyphi/desktop --env-mode=loose --"
   },
   "engines": {
     "bun": ">=1.3.14",
