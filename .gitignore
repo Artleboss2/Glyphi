@@ -68,3 +68,7 @@ glyphi-api-web/
 # The announcement film is built in its own repository.
 .glyphi-media/
 glyphi-announcement-1080p.mp4
+
+# The counting proxy ships with the app; its build output and the staged copy do not.
+crates/*/target/
+apps/desktop/resources/proxy/
