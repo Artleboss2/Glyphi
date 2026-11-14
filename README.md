@@ -30,12 +30,18 @@ already write, adds them up per day, and shows the result in one place — the t
 limits you have left, and what it probably cost.
 
 It is **local-first**. The engine parses files on your machine and makes no network request while it
-scans. There is no account requirement, no proxy, no certificate to install and no browser extension.
+scans. There is no account requirement, no certificate to install and no browser extension. A small
+counting proxy ships with the app for the tools that write nothing readable — it listens on loopback,
+holds no credential and counts only what you route through it; see
+[Counting proxy](#counting-proxy).
 
 ## Highlights
 
 - **One page for today.** Total tokens, cost estimate and a capacity meter for every tool whose
   quota it can read.
+- **A source for the tools with no history.** A Rust counting proxy starts with the app; an agent
+  pointed at `http://127.0.0.1:4787/p/<provider>` is forwarded to the real endpoint while its tokens
+  are counted, so a tool that writes nothing readable still shows up.
 - **History that adds up.** Hourly, daily, weekly and per-model views, a heatmap, streaks and
   achievements, all computed from the same local ledger.
 - **A provider directory you control.** A catalog of more than 300 AI coding tools, searchable in
@@ -53,7 +59,15 @@ scans. There is no account requirement, no proxy, no certificate to install and 
 
 ## Screens
 
-![Today: total tokens, cost estimate and a capacity meter per tool](docs/screenshots/dashboard.png)
+![History: tokens, cost estimate, requests and peak day over thirty days, with a dither sparkline per card](docs/screenshots/dashboard.png)
+
+Thirty days on one page: what you spent, what it cost at API rates, how many requests it took and
+which day carried the most, each with its own shape.
+
+![Settings: general preferences, start at login, tray behaviour, battery saving and the global hotkey](docs/screenshots/settings.png)
+
+Settings is where the app is configured rather than watched: login and tray behaviour, battery
+saving, the global hotkey, then providers, cloud, appearance, the mini window and privacy.
 
 ## Install
 
@@ -103,6 +117,58 @@ The full list — more than 320 tools, with what is read from each — is in
 [docs/PROVIDERS.md](docs/PROVIDERS.md). The exact locations, fields and limitations are documented in
 [docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md), [QUOTA_PROVIDERS.md](docs/QUOTA_PROVIDERS.md) and
 [DISCOVERY.md](docs/DISCOVERY.md).
+
+## Counting proxy
+
+A Rust proxy ships inside the app and starts with it. It listens on
+`127.0.0.1:4787`, forwards each request to the real provider and counts what that
+provider reports — which is how a tool that writes no readable history still shows
+up in the dashboard.
+
+Point an agent at it once, with the provider name in the path:
+
+```
+# Anything that reads an OpenAI-compatible base URL
+OPENAI_BASE_URL=http://127.0.0.1:4787/p/openai
+
+# Claude Code and the Anthropic SDK
+ANTHROPIC_BASE_URL=http://127.0.0.1:4787/p/anthropic
+
+# A local runtime
+OPENAI_BASE_URL=http://127.0.0.1:4787/p/ollama
+```
+
+83 providers are known by name (`openai`, `anthropic`, `google`, `mistral`,
+`groq`, `deepseek`, `xai`, `together`, `openrouter`, `cerebras`, `ollama`,
+`lmstudio`, `vllm`, `localai`, `jan`, `koboldcpp`, `tabby`, `litellm`…). Any other
+endpoint works with an explicit upstream, so the list is not a limit:
+
+```
+http://127.0.0.1:4787/p/my-gateway/v1/chat/completions?upstream=https://gateway.example.com/v1
+```
+
+Or add it to a `providers.json` next to the binary:
+
+```json
+{ "my-gateway": "https://gateway.example.com/v1" }
+```
+
+| Route | Answers |
+| --- | --- |
+| `GET /__glyphi/health` | `{ ok, providers }` |
+| `GET /__glyphi/usage` | per-day, per-provider totals |
+| `GET /__glyphi/providers` | the names it knows |
+| `ANY /p/<provider>/<path>` | the forwarded request |
+
+Glyphi reads `/__glyphi/usage` on every refresh and shows the proxy as its own
+source: today's input, output and a line per provider, the twelve busiest named
+and the rest summed into one line so the sixteen-metric contract always holds.
+
+What it will not do: read traffic it did not route. A client that hardcodes its
+endpoint needs TLS interception, which means a root certificate on your machine —
+not a trade this app makes. Requests keep their own `Authorization` header; the
+proxy holds no credential and keeps no database. `GLYPHI_PROXY_PORT` moves the
+port, `GLYPHI_PROXY_LOG` moves the JSONL file it appends one line to.
 
 ## Privacy
 
