@@ -9,6 +9,7 @@ import {
   latestPublishedVersion,
   newerInstalledVersion,
   previousInstalledVersion,
+  describeUpdateError,
   redactUpdateError,
   resolveUpdateSource,
   squirrelFeedURL,
@@ -144,6 +145,28 @@ describe("newerInstalledVersion", () => {
     const root = install("0.3.5", "0.3.6", "0.3.9");
     expect(previousInstalledVersion(path.join(root, "app-0.3.9", "Glyphi.exe"), "0.3.9")).toBe("0.3.6");
     expect(previousInstalledVersion(path.join(root, "app-0.3.5", "Glyphi.exe"), "0.3.5")).toBeNull();
+  });
+});
+
+describe("describeUpdateError", () => {
+  it("names the feed status instead of blaming the connection", () => {
+    expect(describeUpdateError(new Error("Release check returned 404")))
+      .toBe("Release check returned 404. Try again later.");
+  });
+
+  it("names a failing helper process by its exit code", () => {
+    expect(describeUpdateError(new Error("Update.exe exited with code 1")))
+      .toBe("The update helper exited with code 1. Try again later.");
+  });
+
+  it("keeps the release URL out of the message the user sees", () => {
+    const message = describeUpdateError(new Error("net::ERR_NAME_NOT_RESOLVED https://github.com/x/y"));
+    expect(message).toContain("ERR_NAME_NOT_RESOLVED");
+    expect(message).not.toContain("https:");
+  });
+
+  it("falls back when the updater reports nothing", () => {
+    expect(describeUpdateError(new Error(""))).toBe("The updater gave no reason. Try again later.");
   });
 });
 

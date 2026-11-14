@@ -73,7 +73,8 @@ describe("desktop updates", () => {
     await updater.check();
     autoUpdater.emit("error", new Error("Connection failed at https://github.com/Artleboss2/Glyphi/private"));
     expect(updater.getState().status).toBe("error");
-    expect(updater.getState().error).toContain("try again");
+    expect(updater.getState().error).toContain("Connection failed at [update-url]");
+    expect(updater.getState().error).toContain("Try again later");
     expect(updater.getState().error).not.toContain("https:");
     expect((await updater.check()).status).toBe("checking");
     expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(2);
