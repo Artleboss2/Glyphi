@@ -1,7 +1,7 @@
 {
   "name": "@glyphi/desktop",
   "private": true,
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "Glyphi — local-first AI coding usage dashboard",
   "author": "Arthur Godart",
   "homepage": "https://github.com/Artleboss2/Glyphi",
