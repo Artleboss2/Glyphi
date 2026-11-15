@@ -138,18 +138,19 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:4787/p/anthropic
 OPENAI_BASE_URL=http://127.0.0.1:4787/p/ollama
 ```
 
-83 providers are known by name (`openai`, `anthropic`, `google`, `mistral`,
-`groq`, `deepseek`, `xai`, `together`, `openrouter`, `cerebras`, `ollama`,
-`lmstudio`, `vllm`, `localai`, `jan`, `koboldcpp`, `tabby`, `litellm`…). Any other
-endpoint works with an explicit upstream, so the list is not a limit:
+85 names are known out of the box (`openai`, `anthropic`, `google`, `mistral`,
+`groq`, `deepseek`, `xai`, `together`, `openrouter`, `cerebras`, `freebuff`,
+`ollama`, `lmstudio`, `vllm`, `localai`, `jan`, `koboldcpp`, `tabby`, `litellm`…),
+but a name is only a shortcut. Any endpoint works, three ways:
 
 ```
+# 1. the host itself, no configuration at all
+http://127.0.0.1:4787/p/api.example.com/v1/chat/completions
+
+# 2. the upstream passed with the request
 http://127.0.0.1:4787/p/my-gateway/v1/chat/completions?upstream=https://gateway.example.com/v1
-```
 
-Or add it to a `providers.json` next to the binary:
-
-```json
+# 3. or declared once in a providers.json next to the binary
 { "my-gateway": "https://gateway.example.com/v1" }
 ```
 
@@ -159,6 +160,13 @@ Or add it to a `providers.json` next to the binary:
 | `GET /__glyphi/usage` | per-day, per-provider totals |
 | `GET /__glyphi/providers` | the names it knows |
 | `ANY /p/<provider>/<path>` | the forwarded request |
+
+Counting has three layers: the `usage` block a provider reports, the same block
+inside a server-sent stream (OpenAI's final chunk, Anthropic's `message_start` /
+`message_delta`, Gemini's `usageMetadata`), and — when nothing is reported at all —
+the real text of the prompt and the answer, plus how many messages the request
+carried. Estimated rows say so; the JSON envelope is never counted, so ids and
+model names cannot inflate a number.
 
 Glyphi reads `/__glyphi/usage` on every refresh and shows the proxy as its own
 source: today's input, output and a line per provider, the twelve busiest named
