@@ -1,0 +1,171 @@
+name: Release Rust desktop
+
+# The 0.6 line ships the Rust app: the renderer is still built by Vite, the engine
+# and the shell are compiled by Cargo, and the artifact is a per-user install folder
+# plus a zip. The Electron pipelines stay for older tags; they read their version
+# from apps/desktop/package.json and are not triggered by a Rust-only change.
+
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the built artifacts as a GitHub release
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-rust-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Decide what this run publishes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      release: ${{ steps.decide.outputs.release }}
+      tag: ${{ steps.decide.outputs.tag }}
+      version: ${{ steps.decide.outputs.version }}
+      sha: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare the workspace version against the tag
+        id: decide
+        env:
+          PUBLISH_REQUESTED: ${{ inputs.publish == true }}
+        shell: bash
+        run: |-
+          set -euo pipefail
+          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' apps/desktop-rs/Cargo.toml | head -1)"
+          if [[ -z "$version" ]]; then
+            echo "::error::apps/desktop-rs/Cargo.toml has no workspace version"
+            exit 1
+          fi
+          build=true
+          release=false
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            release="$PUBLISH_REQUESTED"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            if [[ "$GITHUB_REF_NAME" != "desktop-v${version}" ]]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match apps/desktop-rs/Cargo.toml (${version})."
+              exit 1
+            fi
+            release=true
+          fi
+          {
+            echo "build=$build"
+            echo "release=$release"
+            echo "tag=desktop-v${version}"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Glyphi ${version} — Rust desktop"
+            echo "- build: \`${build}\`"
+            echo "- publish: \`${release}\` (\`desktop-v${version}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  windows:
+    name: Windows x64
+    needs: gate
+    if: ${{ needs.gate.outputs.build == 'true' }}
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop-rs
+      - run: bun ci
+      - name: Build the renderer
+        working-directory: apps/desktop
+        run: bunx vite build --config vite.renderer.config.ts
+      - name: Build and test the Rust app
+        working-directory: apps/desktop-rs
+        run: |
+          cargo test --release
+          cargo build --release
+      - name: Stage the install folder
+        shell: pwsh
+        working-directory: apps/desktop-rs
+        run: |-
+          $ErrorActionPreference = "Stop"
+          $name = "Glyphi-${{ needs.gate.outputs.version }}-win32-x64"
+          $stage = "dist/$name"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item "target/release/glyphi.exe" $stage
+          Copy-Item "installer/install.ps1", "installer/uninstall.ps1" $stage
+          Copy-Item "../desktop/resources/icons/glyphi.ico" $stage
+          Copy-Item "../../LICENSE" $stage
+          Copy-Item "../desktop/.vite/renderer/main_window" "$stage/renderer" -Recurse
+          Compress-Archive -Path "$stage/*" -DestinationPath "dist/$name.zip" -Force
+      - name: Smoke test the packaged build
+        shell: pwsh
+        working-directory: apps/desktop-rs/dist
+        run: |-
+          $ErrorActionPreference = "Stop"
+          $app = Start-Process -FilePath "Glyphi-${{ needs.gate.outputs.version }}-win32-x64/glyphi.exe" `
+            -ArgumentList @("--once") -PassThru -Wait
+          if ($app.ExitCode -ne 0) { throw "glyphi --once exited with $($app.ExitCode)" }
+      - name: Checksums
+        shell: bash
+        working-directory: apps/desktop-rs/dist
+        run: |-
+          set -euo pipefail
+          sha256sum *.zip > SHA256SUMS-windows
+          cat SHA256SUMS-windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-win32-x64
+          path: |
+            apps/desktop-rs/dist/*.zip
+            apps/desktop-rs/dist/SHA256SUMS-windows
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish
+    needs: [gate, windows]
+    if: ${{ success() && needs.gate.outputs.release == 'true' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: rust-win32-x64
+          path: release-artifacts
+      - name: Create or reuse the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.gate.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.gate.outputs.version }}
+          RELEASE_SHA: ${{ needs.gate.outputs.sha }}
+        shell: bash
+        run: |-
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --target "$RELEASE_SHA" \
+              --title "Glyphi $RELEASE_VERSION" --generate-notes || true
+          fi
+          gh release view "$RELEASE_TAG" >/dev/null
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.gate.outputs.tag }}
+        shell: bash
+        run: find release-artifacts -type f -print0 | xargs -0 gh release upload "$RELEASE_TAG" --clobber

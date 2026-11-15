@@ -1,0 +1,15 @@
+[package]
+name = "glyphi-domain"
+description = "The shapes Glyphi reasons about: tokens, local days, provider readings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true

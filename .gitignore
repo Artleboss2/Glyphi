@@ -72,3 +72,7 @@ glyphi-announcement-1080p.mp4
 # The counting proxy ships with the app; its build output and the staged copy do not.
 crates/*/target/
 apps/desktop/resources/proxy/
+
+# The Rust app. Its build output and the packaged install folders stay local.
+/apps/desktop-rs/target/
+/apps/desktop-rs/dist/

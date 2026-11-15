@@ -57,6 +57,29 @@ holds no credential and counts only what you route through it; see
   digest, Do Not Disturb and per-alert delivery rules.
 - **Five languages.** English, French, Spanish, Chinese and Hindi.
 
+## Memory
+
+0.6 runs on the WebView the operating system already has (WebView2, WKWebView,
+WebKitGTK) instead of shipping a browser with the app. Measured on Windows 11, same
+machine, both builds left idle for 45 s on the dashboard, median of three samples of
+the summed working set and private bytes of the whole process tree:
+
+| | Electron 0.5.6 | Rust 0.6.0 |
+| --- | --- | --- |
+| Processes | 5 (+1 counting proxy) | 7 (`glyphi.exe` + 6 WebView2) |
+| Working set | 503 MB | 339 MB |
+| Private bytes | 329 MB | 155 MB |
+| The app's own process | — | 4.1 MB private, 21 MB working set |
+| Installed size | 311 MB | 9.4 MB unpacked |
+
+Read the first row as the headline and the rest as context. The shell process costs
+about 4 MB instead of about 70, and the browser that used to live inside the app is
+now the WebView2 runtime Windows keeps for other applications — its processes still
+belong to Glyphi, which is why the totals are closer than the per-process numbers
+suggest. Working set counts shared pages once per process and so overstates both
+sides; private bytes is the fairer column. macOS and Linux were not measured, and
+their WebKit runtimes have different footprints.
+
 ## Screens
 
 ![History: tokens, cost estimate, requests and peak day over thirty days, with a dither sparkline per card](docs/screenshots/dashboard.png)
@@ -76,8 +99,9 @@ pipeline.
 
 **Windows (x64)** — `Glyphi-<version> Setup.exe` (per-user install, no administrator prompt) or the
 portable `Glyphi-win32-x64-<version>.zip`. The installer is not Authenticode-signed yet, so
-SmartScreen may ask for **More info → Run anyway**. The in-app updater reads the Squirrel feed
-published with each release.
+SmartScreen may ask for **More info → Run anyway**. From 0.6.0 the app is the Rust build: the
+installer uninstalls the Electron version, deletes its build folders and Chromium caches, and keeps
+your usage history in `%APPDATA%\Glyphi`.
 
 **macOS (Apple Silicon and Intel)** — a `.dmg` and an update `.zip` per architecture. These builds are
 compiled but **not signed or notarized** yet, so the first launch needs one confirmation from

@@ -1,0 +1,22 @@
+[package]
+name = "glyphi-shell"
+description = "The window, the tray and the bridge the renderer talks to"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+glyphi-domain.workspace = true
+glyphi-engine.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# The window is a system WebView, not a bundled Chromium: that is the entire point
+# of the port. `tao` owns the event loop, `wry` the WebView and `tray-icon` the
+# tray. `muda` is not listed: `tray-icon` 0.19 re-exports its menu types and pins
+# the same 0.15 line, so a second dependency would only risk two copies.
+tao = "0.30"
+wry = "0.47"
+tray-icon = "0.19"

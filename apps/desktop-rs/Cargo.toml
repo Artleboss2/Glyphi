@@ -1,0 +1,41 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/glyphi-domain",
+  "crates/glyphi-providers",
+  "crates/glyphi-store",
+  "crates/glyphi-engine",
+  "crates/glyphi-shell",
+  "crates/glyphi-app",
+]
+
+[workspace.package]
+version = "0.6.0"
+edition = "2021"
+rust-version = "1.78"
+license = "MIT"
+authors = ["Arthur Godart"]
+
+[workspace.dependencies]
+glyphi-domain = { path = "crates/glyphi-domain" }
+glyphi-providers = { path = "crates/glyphi-providers" }
+glyphi-store = { path = "crates/glyphi-store" }
+glyphi-engine = { path = "crates/glyphi-engine" }
+glyphi-shell = { path = "crates/glyphi-shell" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+sha2 = "0.10"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+chrono-tz = "0.10"
+rusqlite = { version = "0.32", features = ["bundled"] }
+ureq = { version = "2.12", default-features = false, features = ["tls", "gzip", "json"] }
+walkdir = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

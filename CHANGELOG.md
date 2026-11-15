@@ -3,6 +3,28 @@
 All notable changes to Glyphi are recorded here. Releases follow semantic versioning for the desktop
 app; the local database schema and the cloud document format carry their own versions.
 
+## 0.6.0 — 2026-11-15
+
+### Changed
+
+- **Glyphi is a Rust application.** The window is `tao` + `wry` on the system WebView, the engine is
+  a set of Rust crates, and Electron, Chromium and Node are gone from the install. The renderer is
+  the same React app, served from the app over a `glyphi://` protocol and talking to the same
+  `window.glyphi` object, so the interface does not change.
+- **Less memory for the same dashboard.** Measured on the same machine, both builds idle on the
+  dashboard: private bytes fall from 329 MB to 155 MB and working set from 503 MB to 339 MB. The
+  app's own process went from tens of megabytes to 4.1 MB, and the install from 311 MB to 9.4 MB.
+  The measurement method is in the [README](README.md#memory).
+
+### Added
+
+- **The update removes the Electron build.** The installer uninstalls the old app through Squirrel,
+  deletes its `app-*` folders, its downloaded packages and the Chromium caches, then installs the
+  Rust build in the same per-user location. The usage database and preferences in `%APPDATA%\Glyphi`
+  are kept; only caches are removed.
+- **The app cleans up after the old build on first launch too**, so a portable copy or a manual
+  install ends up in the same state: one app on disk, one history.
+
 ## 0.5.3 — 2026-11-12
 
 The app itself is unchanged in this build. This release carries the cloud and website work that

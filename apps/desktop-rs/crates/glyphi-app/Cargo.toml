@@ -1,0 +1,22 @@
+[package]
+name = "glyphi-app"
+description = "Glyphi: the binary that hosts the engine and, later, the window"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "glyphi"
+path = "src/main.rs"
+
+[dependencies]
+glyphi-domain.workspace = true
+glyphi-providers.workspace = true
+glyphi-store.workspace = true
+glyphi-engine.workspace = true
+glyphi-shell.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true

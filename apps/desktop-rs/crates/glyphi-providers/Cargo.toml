@@ -1,0 +1,19 @@
+[package]
+name = "glyphi-providers"
+description = "One adapter per tool: what it read, where it came from, what it could not"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+glyphi-domain.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+ureq.workspace = true
+walkdir.workspace = true
+sha2.workspace = true
