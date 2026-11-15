@@ -5,6 +5,10 @@ edition = "2021"
 description = "Local counting proxy for AI providers: one small Rust process, no runtime, no database"
 license = "MIT"
 
+[lib]
+name = "glyphi_proxy"
+path = "src/lib.rs"
+
 [[bin]]
 name = "glyphi-proxy"
 path = "src/main.rs"

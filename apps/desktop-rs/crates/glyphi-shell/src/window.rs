@@ -122,9 +122,9 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
         .build(&event_loop)
         .map_err(|error| error.to_string())?;
 
-    // The toll booth keeps counting while the window is hidden, so it is supervised
-    // rather than started once here.
-    proxy::keep_alive();
+    // The toll booth lives in this process: it keeps counting while the window is
+    // hidden, and it goes away with the app rather than outliving it.
+    proxy::serve_in_process();
 
     let worker = EngineWorker::spawn(engine, {
         let proxy = proxy.clone();
@@ -248,6 +248,7 @@ fn build_webview(
     let builder = WebViewBuilder::new()
         // The preload's replacement: same `window.glyphi`, defined before the app
         // boots so no component ever sees it missing.
+        .with_initialization_script(crate::CALM_SCRIPT)
         .with_initialization_script(crate::BRIDGE_SCRIPT)
         .with_ipc_handler(move |request: Request<String>| {
             let call: BridgeCall = match serde_json::from_str(request.body()) {

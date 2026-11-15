@@ -24,8 +24,15 @@ app; the local database schema and the cloud document format carry their own ver
   returned are the completion, converted at four characters to a token. Nothing is
   decrypted, those rows say `estimated`, and the host decides which provider the line
   belongs to. Point `HTTPS_PROXY` or the system proxy at the app to use it.
-- **The app starts the proxy with the window** when a copy sits next to the
-  executable and nothing already answers on the port.
+- **The proxy is part of the app.** The listener runs on a thread of `glyphi.exe`:
+  closing the window keeps it counting, and ending the process in Task Manager takes
+  it down with the app. `glyphi-proxy` remains available as a standalone binary built
+  from the same library.
+- **The window stops paying for motion.** A permanently animated, blurred page kept
+  the WebView's GPU process above a full core while the dashboard was idle. The shell
+  now runs animations once and drops `backdrop-filter`, without touching the renderer.
+- **The old history is imported.** The Electron build's `history.sqlite` becomes
+  events in the ledger on start-up, and a provider with no adapter still gets a card.
 - **The update removes the Electron build.** The installer uninstalls the old app through Squirrel,
   deletes its `app-*` folders, its downloaded packages and the Chromium caches, then installs the
   Rust build in the same per-user location. The usage database and preferences in `%APPDATA%\Glyphi`

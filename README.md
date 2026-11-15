@@ -66,7 +66,7 @@ the summed working set and private bytes of the whole process tree:
 
 | | Electron 0.5.6 | Rust 0.6.0 |
 | --- | --- | --- |
-| Processes | 5 (+1 counting proxy) | 7 (`glyphi.exe` + 6 WebView2) |
+| Processes | 5 (+1 counting proxy) | 6 (`glyphi.exe` + 5 WebView2) |
 | Working set | 503 MB | 339 MB |
 | Private bytes | 329 MB | 155 MB |
 | The app's own process | — | 4.1 MB private, 21 MB working set |
@@ -224,6 +224,14 @@ its own domain), so a gateway you never configured still gets its own line.
 The proxy still holds no credential and keeps no database: it writes one JSON line
 per request or tunnel to `proxy-usage.jsonl`. `GLYPHI_PROXY_PORT` moves the port,
 `GLYPHI_PROXY_LOG` moves the log.
+
+It runs **inside Glyphi's own process**, on a thread of its own. There is no second
+program to install or watch: closing the window leaves it counting, and ending
+Glyphi in Task Manager takes it down with everything else. The `glyphi-proxy`
+binary still exists for a terminal, and serves the same code from the same library.
+
+Because the proxy is the app, it is only there while the app is: if another tool is
+routed through `127.0.0.1:4787`, quitting Glyphi takes its network with it.
 
 ## Privacy
 

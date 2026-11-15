@@ -25,3 +25,10 @@ pub use window::{run, ShellConfig};
 /// not ported yet answer a safe default instead of throwing: a missing feature
 /// must not blank the dashboard.
 pub const BRIDGE_SCRIPT: &str = include_str!("../assets/bridge.js");
+
+/// Runs before the renderer, next to the bridge.
+///
+/// A permanently animated, blurred page kept the WebView's GPU process above a full
+/// core while the dashboard was idle. This stylesheet turns that cost down without
+/// changing a single class the renderer owns.
+pub const CALM_SCRIPT: &str = include_str!("../assets/calm.js");

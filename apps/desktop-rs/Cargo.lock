@@ -940,11 +940,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "glyphi-proxy"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "ureq",
+]
+
+[[package]]
 name = "glyphi-shell"
 version = "0.6.0"
 dependencies = [
  "glyphi-domain",
  "glyphi-engine",
+ "glyphi-proxy",
  "serde",
  "serde_json",
  "tao",
