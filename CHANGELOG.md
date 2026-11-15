@@ -18,6 +18,14 @@ app; the local database schema and the cloud document format carry their own ver
 
 ### Added
 
+- **The counting proxy is a toll booth.** An agent that cannot be pointed at
+  `127.0.0.1:4787/p/<provider>` can still be counted: a `CONNECT host:port` becomes a
+  measured tunnel, the bytes the agent sent are the prompt and the bytes the provider
+  returned are the completion, converted at four characters to a token. Nothing is
+  decrypted, those rows say `estimated`, and the host decides which provider the line
+  belongs to. Point `HTTPS_PROXY` or the system proxy at the app to use it.
+- **The app starts the proxy with the window** when a copy sits next to the
+  executable and nothing already answers on the port.
 - **The update removes the Electron build.** The installer uninstalls the old app through Squirrel,
   deletes its `app-*` folders, its downloaded packages and the Chromium caches, then installs the
   Rust build in the same per-user location. The usage database and preferences in `%APPDATA%\Glyphi`

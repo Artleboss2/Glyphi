@@ -73,11 +73,36 @@ per request. No async runtime, no database, no OpenSSL. A release build is about
 1.5 MB and an idle process sits around 6 MB of RAM. Requests keep their own
 `Authorization` header: the proxy holds no credentials.
 
+## The toll booth (`CONNECT`)
+
+A client that cannot be pointed at `/p/<provider>` can still be counted if it goes
+through the proxy. Set the environment or the system proxy to
+`http://127.0.0.1:4787`:
+
+```
+setx HTTPS_PROXY http://127.0.0.1:4787      # Windows, new shells
+setx HTTP_PROXY  http://127.0.0.1:4787
+export HTTPS_PROXY=http://127.0.0.1:4787    # macOS / Linux
+```
+
+Each `CONNECT host:port` is answered `200 Connection Established`, then the two
+directions are copied while a counter adds what passes. The bytes the agent sent
+are the prompt, the bytes the provider returned are the completion, converted at
+four characters to a token and written as `estimated: true`, one message per
+tunnel. The host names the provider (`api.anthropic.com` → anthropic,
+`api.codebuff.com` → freebuff, `api2.cursor.sh` → cursor); an unknown host keeps its
+registrable domain, so `api.gateway.acme.dev` lands under `acme` rather than
+"other". A loopback or bare address is grouped as `proxy`.
+
+Nothing is decrypted and nothing is parsed inside a tunnel: this is a measurement of
+traffic, not of a usage block, and it says so.
+
 ## What it cannot see
 
-Traffic it did not route. A client that hardcodes its endpoint needs TLS
-interception, which means installing a root certificate on the user's machine.
-That is not worth the trust it costs.
+Traffic that never reaches it. A process started before the proxy environment
+variable was set, or one that ignores both the environment and the system proxy,
+is not counted — and reading it would need TLS interception, which means installing
+a root certificate on the user's machine. That is not worth the trust it costs.
 
 ## Build and test
 

@@ -196,11 +196,34 @@ Glyphi reads `/__glyphi/usage` on every refresh and shows the proxy as its own
 source: today's input, output and a line per provider, the twelve busiest named
 and the rest summed into one line so the sixteen-metric contract always holds.
 
-What it will not do: read traffic it did not route. A client that hardcodes its
-endpoint needs TLS interception, which means a root certificate on your machine —
-not a trade this app makes. Requests keep their own `Authorization` header; the
-proxy holds no credential and keeps no database. `GLYPHI_PROXY_PORT` moves the
-port, `GLYPHI_PROXY_LOG` moves the JSONL file it appends one line to.
+### The toll booth: counting an agent you cannot reconfigure
+
+Some clients — the Freebuff desktop app among them — offer no base URL to change,
+and redirecting them would mean terminating their TLS, which needs a root
+certificate on your machine. The proxy does not do that. It counts what passes
+instead: point the environment or the system proxy at `127.0.0.1:4787` and every
+`CONNECT host:port` becomes a measured tunnel.
+
+```
+# Windows, for the tools launched from this shell from now on
+setx HTTPS_PROXY http://127.0.0.1:4787
+setx HTTP_PROXY  http://127.0.0.1:4787
+
+# macOS / Linux
+export HTTPS_PROXY=http://127.0.0.1:4787
+```
+
+Windows Settings → Network → Proxy does the same for applications that read the
+system proxy. Either way, what is counted is bytes: what the agent sent is the
+prompt, what the provider returned is the completion, converted at four characters
+to a token. Those lines are marked `estimated`, because a tunnel hides its text.
+One tunnel is recorded as one message. The host decides the name on the dashboard
+(`api.anthropic.com` → anthropic, `api.codebuff.com` → freebuff, anything else keeps
+its own domain), so a gateway you never configured still gets its own line.
+
+The proxy still holds no credential and keeps no database: it writes one JSON line
+per request or tunnel to `proxy-usage.jsonl`. `GLYPHI_PROXY_PORT` moves the port,
+`GLYPHI_PROXY_LOG` moves the log.
 
 ## Privacy
 

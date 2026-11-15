@@ -71,6 +71,7 @@ fn main() {
         Mode::Once => run_once(&mut engine),
         Mode::Engine => run_engine(&mut engine),
         Mode::Window => {
+            start_proxy();
             let config = ShellConfig {
                 renderer,
                 user_data: path.parent().map(PathBuf::from),
@@ -81,6 +82,31 @@ fn main() {
                 std::process::exit(1);
             }
         }
+    }
+}
+
+/// Starts the counting proxy that ships beside the app.
+///
+/// The proxy is what turns any agent into a measured one: it is the toll booth at
+/// the door, so a copy of it next to the executable is started with the window. A
+/// proxy already answering on the port wins — two of them would write the same log.
+fn start_proxy() {
+    let port: u16 = std::env::var("GLYPHI_PROXY_PORT")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(4787);
+    if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
+        return;
+    }
+    let Some(directory) = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(PathBuf::from))
+    else {
+        return;
+    };
+    let proxy = directory.join(if cfg!(windows) { "glyphi-proxy.exe" } else { "glyphi-proxy" });
+    if proxy.is_file() {
+        let _ = std::process::Command::new(proxy).spawn();
     }
 }
 

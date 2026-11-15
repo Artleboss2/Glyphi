@@ -18,19 +18,30 @@
 //! an append-only line per request. Nothing is kept in memory between requests,
 //! so the resident size of an idle proxy is a couple of megabytes.
 //!
-//! What it cannot do: read HTTPS traffic it did not route. A client that only
-//! talks to `codebuff.com` and offers no base-URL setting (the Freebuff desktop
-//! app) needs TLS interception, which means shipping a root certificate — out of
-//! scope on purpose.
+//! ## The toll booth
+//!
+//! An agent that cannot be pointed at `/p/<provider>` can still be counted, as long
+//! as it goes through the proxy: a `CONNECT host:port` opens a tunnel, and the two
+//! directions are measured as they pass. Nothing is decrypted and nothing is parsed
+//! — the bytes the agent sent are the prompt, the bytes the provider returned are the
+//! completion — so those lines say `estimated` and convert at four characters to a
+//! token. That is enough to answer "how much did this agent cost me today" for a
+//! client that offers no base-URL setting at all.
+//!
+//! What it still cannot do: count traffic that never reaches it. An agent only
+//! passes through the proxy if its environment or the system proxy says so
+//! (`HTTPS_PROXY=http://127.0.0.1:4787`, or Windows Settings → Proxy).
 
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{Shutdown, TcpListener, TcpStream};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::thread;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::{json, Map, Value};
 
@@ -210,7 +221,11 @@ fn handle(mut stream: TcpStream, providers: &BTreeMap<String, String>, log: &Pat
     let Some(request) = read_request(&mut stream)? else { return Ok(()) };
 
     if request.path == "/__glyphi/health" {
-        return respond_json(&mut stream, 200, &json!({ "ok": true, "providers": providers.len() }));
+        return respond_json(
+            &mut stream,
+            200,
+            &json!({ "ok": true, "providers": providers.len(), "tunnel": true }),
+        );
     }
     if request.path == "/__glyphi/usage" {
         return respond_json(&mut stream, 200, &aggregate(log));
@@ -218,6 +233,12 @@ fn handle(mut stream: TcpStream, providers: &BTreeMap<String, String>, log: &Pat
     if request.path == "/__glyphi/providers" {
         let list: Vec<String> = providers.keys().cloned().collect();
         return respond_json(&mut stream, 200, &json!(list));
+    }
+
+    // A client configured to use this proxy sends `CONNECT host:port` before any
+    // TLS handshake. There is nothing to parse inside; the tunnel is the measurement.
+    if request.method == "CONNECT" {
+        return tunnel(stream, &request.path, log);
     }
 
     let Some(rest) = request.path.strip_prefix("/p/") else {
@@ -286,6 +307,161 @@ fn bare_origin(segment: &str) -> Option<String> {
             Err(_) => false,
         };
     Some(format!("{}://{segment}", if loopback { "http" } else { "https" }))
+}
+
+/// One `CONNECT host:port` tunnel, measured in both directions.
+///
+/// The handshake is answered first, then the two directions are pumped by two
+/// threads that only add to a counter: the tunnel stays a tunnel, and a client that
+/// sends nothing costs nothing.
+fn tunnel(mut client: TcpStream, target: &str, log: &PathBuf) -> std::io::Result<()> {
+    let Some((host, port)) = split_target(target) else {
+        return respond_json(&mut client, 400, &json!({ "error": "CONNECT needs host:port" }));
+    };
+    let upstream = match TcpStream::connect((host.as_str(), port)) {
+        Ok(stream) => stream,
+        Err(error) => {
+            return respond_json(
+                &mut client,
+                502,
+                &json!({ "error": format!("{host}:{port} could not be reached: {error}") }),
+            )
+        }
+    };
+    upstream.set_nodelay(true).ok();
+    client.set_nodelay(true).ok();
+
+    client.write_all(b"HTTP/1.1 200 Connection Established\r\n\r\n")?;
+    client.flush()?;
+
+    let from_client = client.try_clone()?;
+    let to_upstream = upstream.try_clone()?;
+    let sent = Arc::new(AtomicU64::new(0));
+    let received = Arc::new(AtomicU64::new(0));
+
+    let sent_counter = Arc::clone(&sent);
+    let uplink = thread::spawn(move || {
+        let mut reader = from_client;
+        let mut writer = to_upstream;
+        let result = pump(&mut reader, &mut writer, &sent_counter);
+        // Closing the write half tells the provider the conversation is over, which
+        // is what lets the downlink finish and stop the tunnel hanging.
+        let _ = writer.shutdown(Shutdown::Both);
+        let _ = reader.shutdown(Shutdown::Both);
+        result
+    });
+    let received_counter = Arc::clone(&received);
+    let _downlink = thread::spawn(move || {
+        let mut reader = upstream;
+        let mut writer = client;
+        let result = pump(&mut reader, &mut writer, &received_counter);
+        let _ = writer.shutdown(Shutdown::Both);
+        let _ = reader.shutdown(Shutdown::Both);
+        result
+    });
+
+    // The agent closing its side is the end of the conversation: the line is written
+    // then, not when a keep-alive tunnel eventually times out. A short grace period
+    // lets the last response bytes land first.
+    let _ = uplink.join();
+    thread::sleep(Duration::from_millis(150));
+
+    let bytes_in = sent.load(Ordering::Relaxed);
+    let bytes_out = received.load(Ordering::Relaxed);
+    if bytes_in == 0 && bytes_out == 0 {
+        return Ok(());
+    }
+    // One tunnel is one conversation: the byte counts say how big it was, and there
+    // is no message list to count inside an encrypted stream.
+    record(
+        log,
+        &provider_for_host(&host),
+        &Counts {
+            input: tokens_from_chars(bytes_in),
+            output: tokens_from_chars(bytes_out),
+            messages: 1,
+            estimated: true,
+        },
+    );
+    Ok(())
+}
+
+/// Copies one direction and adds what it copied. The write half is closed on EOF so
+/// the other direction stops waiting on a socket nobody will use again.
+fn pump<R: Read, W: Write>(reader: &mut R, writer: &mut W, counter: &AtomicU64) -> std::io::Result<()> {
+    let mut buffer = [0u8; 16 * 1024];
+    loop {
+        match reader.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(read) => {
+                counter.fetch_add(read as u64, Ordering::Relaxed);
+                if writer.write_all(&buffer[..read]).is_err() {
+                    break;
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    let _ = writer.flush();
+    Ok(())
+}
+
+fn split_target(target: &str) -> Option<(String, u16)> {
+    let (host, port) = target.rsplit_once(':')?;
+    let port: u16 = port.parse().ok()?;
+    let host = host.trim_matches(|character| character == '[' || character == ']');
+    if host.is_empty() {
+        return None;
+    }
+    Some((host.to_string(), port))
+}
+
+/// Which provider a tunnelled host belongs to. The names are the ones the dashboard
+/// already groups by; an unknown host falls back to its own domain, so a gateway
+/// nobody listed still gets a line instead of being folded into "other".
+fn provider_for_host(host: &str) -> String {
+    let host = host.to_ascii_lowercase();
+    for (suffix, provider) in [
+        ("anthropic.com", "anthropic"),
+        ("openai.com", "openai"),
+        ("chatgpt.com", "openai"),
+        ("codebuff.com", "freebuff"),
+        ("freebuff.com", "freebuff"),
+        ("googleapis.com", "google"),
+        ("githubcopilot.com", "copilot"),
+        ("cursor.sh", "cursor"),
+        ("cursor.com", "cursor"),
+        ("mistral.ai", "mistral"),
+        ("deepseek.com", "deepseek"),
+        ("moonshot.cn", "moonshot"),
+        ("openrouter.ai", "openrouter"),
+        ("groq.com", "groq"),
+        ("together.xyz", "together"),
+        ("perplexity.ai", "perplexity"),
+        ("x.ai", "xai"),
+    ] {
+        if host == suffix || host.ends_with(&format!(".{suffix}")) {
+            return provider.to_string();
+        }
+    }
+    // `api2.gateway.example.com` is the user's `example` until proven otherwise: the
+    // registrable domain is the label before the last one. An address has no name to
+    // offer, so it is grouped as `proxy` rather than as `0`.
+    let labels: Vec<&str> = host.split('.').filter(|part| !part.is_empty()).collect();
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return "proxy".to_string();
+    }
+    match labels.len() {
+        0 => "proxy".to_string(),
+        1 => labels[0].to_string(),
+        count => labels[count - 2].to_string(),
+    }
+}
+
+/// Four characters to a token. A tunnel hides the text, so this is the only ratio
+/// available, and it is why those lines are marked estimated.
+fn tokens_from_chars(chars: u64) -> u64 {
+    (chars + 3) / 4
 }
 
 struct Request {
@@ -828,6 +1004,35 @@ mod tests {
         assert!(providers.contains_key("freebuff"));
         let url = resolve_url("freebuff", "/chat/completions", &request("/p/freebuff/chat/completions", &[]), &providers);
         assert_eq!(url.as_deref(), Some("https://codebuff.com/api/v1/chat/completions"));
+    }
+
+    #[test]
+    fn a_tunnel_counts_what_each_direction_carried() {
+        let mut request = std::io::Cursor::new(b"prompt prompt prompt".to_vec());
+        let mut forwarded = Vec::new();
+        let counter = AtomicU64::new(0);
+        pump(&mut request, &mut forwarded, &counter).unwrap();
+        assert_eq!(counter.load(Ordering::Relaxed), 20);
+        assert_eq!(forwarded, b"prompt prompt prompt");
+        assert_eq!(tokens_from_chars(20), 5);
+    }
+
+    #[test]
+    fn a_tunnelled_host_names_its_provider() {
+        assert_eq!(provider_for_host("api.anthropic.com"), "anthropic");
+        assert_eq!(provider_for_host("api.codebuff.com"), "freebuff");
+        assert_eq!(provider_for_host("chatgpt.com"), "openai");
+        assert_eq!(provider_for_host("api2.cursor.sh"), "cursor");
+        // An unknown gateway keeps its own name rather than becoming "other".
+        assert_eq!(provider_for_host("api.gateway.acme.dev"), "acme");
+        assert_eq!(provider_for_host("models.example.com"), "example");
+    }
+
+    #[test]
+    fn a_connect_target_is_split_into_host_and_port() {
+        assert_eq!(split_target("api.anthropic.com:443"), Some(("api.anthropic.com".to_string(), 443)));
+        assert_eq!(split_target("127.0.0.1:4787"), Some(("127.0.0.1".to_string(), 4787)));
+        assert_eq!(split_target("api.anthropic.com"), None);
     }
 
     #[test]
