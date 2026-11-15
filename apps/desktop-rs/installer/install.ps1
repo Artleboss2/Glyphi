@@ -86,6 +86,16 @@ if (-not $NoShortcuts) {
     $link.WorkingDirectory = $InstallDirectory
     $link.IconLocation = $installedExe
     $link.Save()
+
+    # The desktop copy the old build left behind was removed with it, so the new app
+    # puts one back where it is actually looked for.
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    $shortcut = $shell.CreateShortcut((Join-Path $desktop "Glyphi.lnk"))
+    $shortcut.TargetPath = $installedExe
+    $shortcut.WorkingDirectory = $InstallDirectory
+    $shortcut.IconLocation = $installedExe
+    $shortcut.Description = "Glyphi"
+    $shortcut.Save()
 }
 
 $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Glyphi"
