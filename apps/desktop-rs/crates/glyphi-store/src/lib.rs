@@ -282,6 +282,23 @@ impl Store {
         Ok(days)
     }
 
+    /// Every provider with a day in the window, whether or not it has an adapter.
+    ///
+    /// The dashboard draws one card per id, so a provider the ledger knows about and
+    /// no adapter can reach — the Electron history, a gateway that stopped running —
+    /// still needs its name here or its usage would be counted and never shown.
+    pub fn providers_between(&self, first: LocalDay, last: LocalDay) -> Result<Vec<String>, StoreError> {
+        let mut statement = self.connection.prepare(
+            "SELECT DISTINCT provider FROM usage_day WHERE day >= ?1 AND day <= ?2 ORDER BY provider",
+        )?;
+        let rows = statement.query_map(params![first.as_key(), last.as_key()], |row| row.get(0))?;
+        let mut providers = Vec::new();
+        for row in rows {
+            providers.push(row?);
+        }
+        Ok(providers)
+    }
+
     /// One day's models, for one provider or for all of them.
     pub fn models(
         &self,

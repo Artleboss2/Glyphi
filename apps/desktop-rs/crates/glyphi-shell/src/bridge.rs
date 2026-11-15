@@ -94,6 +94,7 @@ impl BridgeReply {
 /// A refresh walks a filesystem and answers HTTP; doing that on the UI thread would
 /// freeze the window for as long as a scan takes. The worker owns the engine and is
 /// the only thing that touches the database.
+#[derive(Clone)]
 pub struct EngineWorker {
     jobs: Sender<EngineRequest>,
 }
@@ -146,7 +147,10 @@ where
 /// the engine has a second shape for tests and `--once`, so the translation happens
 /// on the way into the page, once.
 fn shape(method: EngineMethod, mut response: EngineResponse) -> EngineResponse {
-    if !matches!(method, EngineMethod::SnapshotGet | EngineMethod::ProviderRefresh) {
+    if !matches!(
+        method,
+        EngineMethod::SnapshotGet | EngineMethod::RefreshAll | EngineMethod::ProviderRefresh
+    ) {
         return response;
     }
     let Some(result) = response.result.take() else {
@@ -154,7 +158,9 @@ fn shape(method: EngineMethod, mut response: EngineResponse) -> EngineResponse {
     };
     match serde_json::from_value::<Snapshot>(result) {
         Ok(snapshot) => {
-            response.result = serde_json::to_value(dashboard::from_snapshot(&snapshot)).ok();
+            // The renderer's `DashboardState` wraps the snapshot: it reads
+            // `state.snapshot.providers`, not `state.providers`.
+            response.result = serde_json::to_value(dashboard::state(&snapshot)).ok();
             response
         }
         Err(_) => EngineResponse::failed(
@@ -172,6 +178,7 @@ fn shape(method: EngineMethod, mut response: EngineResponse) -> EngineResponse {
 fn map_method(method: &str) -> Result<glyphi_engine::EngineMethod, String> {
     match method {
         "glyphi.snapshot" => Ok(glyphi_engine::EngineMethod::SnapshotGet),
+        "glyphi.refreshAll" => Ok(glyphi_engine::EngineMethod::RefreshAll),
         "glyphi.refreshProvider" => Ok(glyphi_engine::EngineMethod::ProviderRefresh),
         "glyphi.updateConfig" => Ok(glyphi_engine::EngineMethod::ConfigUpdate),
         other => Err(format!("no engine method for '{other}'")),

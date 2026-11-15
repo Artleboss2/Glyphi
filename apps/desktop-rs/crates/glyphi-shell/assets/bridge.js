@@ -7,13 +7,16 @@
  * engine answers on the same id.
  *
  * Methods the Rust core has not ported yet answer a safe default instead of
- * throwing. A missing feature must degrade one card, not blank the dashboard.
+ * throwing. A missing feature must degrade one card, not blank the dashboard, so
+ * every default below has the same shape the renderer parses — an empty object
+ * where a profile belongs is enough to throw inside `JSON.stringify`.
  */
 (function () {
   if (window.glyphi) return;
 
   var pending = new Map();
   var counter = 0;
+  var snapshotListeners = new Set();
 
   function post(method, params) {
     return new Promise(function (resolve, reject) {
@@ -40,6 +43,18 @@
     }
   };
 
+  /* The shell pushes a dashboard it refreshed on its own — at start-up, from the
+     tray — through the same subscription the renderer already registered. */
+  window.__glyphiPush = function (state) {
+    snapshotListeners.forEach(function (listener) {
+      try {
+        listener(state);
+      } catch (error) {
+        /* One broken listener must not stop the others. */
+      }
+    });
+  };
+
   /* Settles with the default when the engine does not answer within `ms`, so a
      stuck engine cannot leave an awaited boot sequence hanging forever. */
   function withTimeout(promise, ms, fallback) {
@@ -53,12 +68,6 @@
     ]);
   }
 
-  /* A subscription the shell cannot produce yet: the renderer keeps its
-     unsubscribe contract and simply never fires. */
-  function silent() {
-    return function () {};
-  }
-
   var api = {
     platform: "rust",
     /* The engine. */
@@ -66,16 +75,18 @@
       return post("glyphi.snapshot");
     },
     refreshAll: function () {
-      return post("glyphi.snapshot");
+      return post("glyphi.refreshAll");
     },
     refreshProvider: function (providerId) {
       return post("glyphi.refreshProvider", { providerId: providerId });
     },
     updatePreferences: function (patch) {
-      return post("glyphi.updateConfig", patch || {});
+      return post("shell.preferences", { patch: patch || {} });
     },
+    /* Read from the same JSON file the Electron build wrote, so a theme, a
+       language and a background survive the port. */
     getPreferences: function () {
-      return withTimeout(post("glyphi.snapshot"), 1500, null);
+      return withTimeout(post("shell.preferences"), 1500, null);
     },
     /* Window controls: the renderer draws the title bar. */
     minimizeWindow: function () {
@@ -98,7 +109,7 @@
       return Promise.resolve({});
     },
     getDiagnostics: function () {
-      return Promise.resolve({ shell: "rust", engine: "in-process" });
+      return Promise.resolve({ status: "ready", restartCount: 0, messages: [] });
     },
     getWindowState: function () {
       return Promise.resolve({ maximized: false });
@@ -115,8 +126,22 @@
     rollbackUpdate: function () {
       return Promise.resolve(false);
     },
+    /* The full signed-out shape. `profile` is a union with no null branch: the
+       renderer reads `status.profile.state`, so a null there blanks the window. */
     getCloudStatus: function () {
-      return Promise.resolve({ signedIn: false });
+      return Promise.resolve({
+        signedIn: false,
+        accountId: null,
+        automatic: false,
+        pending: 0,
+        busy: false,
+        progress: null,
+        lastCompleted: null,
+        error: null,
+        conflicts: [],
+        account: null,
+        profile: { state: "signed-out" }
+      });
     },
     cloudAction: function () {
       return Promise.resolve(null);
@@ -208,13 +233,29 @@
     endWidgetResize: function () {
       return Promise.resolve(true);
     },
-    /* Subscriptions. */
-    onSnapshot: silent,
-    onEngineStatus: silent,
-    onNavigate: silent,
-    onUsageAlert: silent,
-    onUpdateState: silent,
-    onWindowMaximized: silent
+    /* Subscriptions the shell can feed. The rest stay silent so the renderer
+       keeps its unsubscribe contract. */
+    onSnapshot: function (listener) {
+      snapshotListeners.add(listener);
+      return function () {
+        snapshotListeners.delete(listener);
+      };
+    },
+    onEngineStatus: function () {
+      return function () {};
+    },
+    onNavigate: function () {
+      return function () {};
+    },
+    onUsageAlert: function () {
+      return function () {};
+    },
+    onUpdateState: function () {
+      return function () {};
+    },
+    onWindowMaximized: function () {
+      return function () {};
+    }
   };
 
   window.glyphi = Object.freeze(api);

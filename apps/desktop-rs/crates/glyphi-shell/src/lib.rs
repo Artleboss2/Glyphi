@@ -9,11 +9,13 @@ pub mod assets;
 pub mod bridge;
 pub mod dashboard;
 pub mod legacy;
+pub mod preferences;
+pub mod proxy;
 pub mod tray;
 pub mod window;
 
 pub use bridge::{BridgeCall, EngineWorker};
-pub use dashboard::DashboardSnapshot;
+pub use dashboard::{DashboardSnapshot, DashboardState};
 pub use window::{run, ShellConfig};
 
 /// The JavaScript the WebView runs before any renderer code.

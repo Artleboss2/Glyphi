@@ -20,3 +20,11 @@ glyphi-shell.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 chrono.workspace = true
+chrono-tz.workspace = true
+# Reads the Electron build's `history.sqlite` once, so the port keeps the usage the
+# old app had already recorded.
+rusqlite.workspace = true
+
+[build-dependencies]
+# Embeds the icon and version metadata in the Windows executable.
+winres = "0.1"

@@ -17,6 +17,9 @@ pub const ENGINE_MESSAGE_LIMIT: usize = 1_048_576;
 pub enum EngineMethod {
     #[serde(rename = "snapshot.get")]
     SnapshotGet,
+    /// Scan every adapter, store what it found, then answer with the snapshot.
+    #[serde(rename = "refresh.all")]
+    RefreshAll,
     #[serde(rename = "provider.refresh")]
     ProviderRefresh,
     #[serde(rename = "config.update")]

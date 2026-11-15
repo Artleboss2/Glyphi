@@ -47,6 +47,42 @@ pub struct SnapshotProvider {
     pub analytics: Option<ProviderAnalytics>,
 }
 
+/// A reading for a provider that exists only in the ledger: the numbers are in the
+/// analytics beside it, and no quota endpoint has answered for it.
+fn ledger_reading() -> ProviderReading {
+    ProviderReading {
+        source: glyphi_domain::ProviderSource::LocalSessions,
+        windows: Vec::new(),
+        metrics: Vec::new(),
+        identity: None,
+        credits: None,
+        account_key: None,
+        day: None,
+        error: None,
+        updated_at: Utc::now().to_rfc3339(),
+    }
+}
+
+/// The name a ledger id is drawn under. An unknown id keeps its own spelling with a
+/// capital, so a gateway added to the ledger tomorrow is readable today.
+fn display_name(id: &str) -> String {
+    match id {
+        "freebuff" => "Freebuff".to_string(),
+        "roo" => "Roo Code".to_string(),
+        "codex" => "Codex".to_string(),
+        "cline" => "Cline".to_string(),
+        "claude" => "Claude".to_string(),
+        "proxy" => "Counting proxy".to_string(),
+        other => {
+            let mut chars = other.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => other.to_string(),
+            }
+        }
+    }
+}
+
 pub struct Engine {
     store: Store,
     settings: EngineSettings,
@@ -79,7 +115,12 @@ impl Engine {
     pub fn answer(&mut self, request: EngineRequest) -> EngineResponse {
         let id = request.id.clone();
         let result = match request.method {
+            // Reading the ledger is cheap and must not rescan a filesystem: the
+            // window asks for a snapshot far more often than it asks for a refresh.
             EngineMethod::SnapshotGet => self
+                .snapshot()
+                .map(|snapshot| serde_json::to_value(snapshot).unwrap_or(Value::Null)),
+            EngineMethod::RefreshAll => self
                 .refresh_all(&mut |_| {})
                 .map(|snapshot| serde_json::to_value(snapshot).unwrap_or(Value::Null)),
             EngineMethod::ProviderRefresh => self.refresh_one(&request.params),
@@ -159,6 +200,28 @@ impl Engine {
             .map_err(|error| EngineError::new("store_unavailable", error.to_string(), true))?;
 
         self.rebuild_window()?;
+
+        // A provider can exist only in the ledger: the Electron history arrived
+        // without an adapter, and a gateway that has stopped still has days to show.
+        // Leaving it out would count its usage and never draw it.
+        let zone = self.settings.zone();
+        let today = LocalDay::of(Utc::now(), zone);
+        let first = today.nth_prior(self.settings.history_days);
+        let known = self
+            .store
+            .providers_between(first, today)
+            .map_err(|error| EngineError::new("store_unavailable", error.to_string(), true))?;
+        for provider in known {
+            if readings.iter().any(|reading| reading.id == provider) {
+                continue;
+            }
+            readings.push(SnapshotProvider {
+                name: display_name(&provider),
+                id: provider,
+                reading: ledger_reading(),
+                analytics: None,
+            });
+        }
 
         // Keep the readings so a later single-card refresh can answer with the whole
         // dashboard, then build the snapshot from the ledger just written.

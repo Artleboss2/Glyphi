@@ -6,12 +6,20 @@
 //! why the loop is written against a pair of read/write handles rather than
 //! `std::io::stdin()`/`stdout()` directly.
 
+// A windowed app, not a console one: launching it from the Start Menu must not open
+// a terminal behind the dashboard. `--once` and `--engine` still write to a pipe
+// when a shell gives them one.
+#![cfg_attr(windows, windows_subsystem = "windows")]
+
+mod legacy_history;
+
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 
 use glyphi_engine::{Engine, EngineMessage, EngineRequest, EngineResponse, EngineSettings};
 use glyphi_providers::all_adapters;
 use glyphi_shell::{run, ShellConfig};
+// The proxy is started and supervised by the shell, next to the window it belongs to.
 use glyphi_store::Store;
 
 fn main() {
@@ -51,7 +59,7 @@ fn main() {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    let store = match Store::open(&path) {
+    let mut store = match Store::open(&path) {
         Ok(store) => store,
         Err(error) => {
             eprintln!("glyphi: cannot open {}: {error}", path.display());
@@ -65,13 +73,24 @@ fn main() {
         history_days: 90,
         ..EngineSettings::default()
     };
+
+    // The Electron build kept its days in `history.sqlite` beside this ledger. The
+    // port is a new app, not a new account: the usage it already recorded comes with
+    // it, before the first paint asks the ledger anything.
+    if let Some(directory) = path.parent() {
+        match legacy_history::import(directory, &mut store, settings.zone()) {
+            Ok(0) => {}
+            Ok(count) => eprintln!("glyphi: imported {count} usage events from the old build"),
+            Err(error) => eprintln!("glyphi: the old history was not imported: {error}"),
+        }
+    }
+
     let mut engine = Engine::new(store, settings, all_adapters());
 
     match mode {
         Mode::Once => run_once(&mut engine),
         Mode::Engine => run_engine(&mut engine),
         Mode::Window => {
-            start_proxy();
             let config = ShellConfig {
                 renderer,
                 user_data: path.parent().map(PathBuf::from),
@@ -82,31 +101,6 @@ fn main() {
                 std::process::exit(1);
             }
         }
-    }
-}
-
-/// Starts the counting proxy that ships beside the app.
-///
-/// The proxy is what turns any agent into a measured one: it is the toll booth at
-/// the door, so a copy of it next to the executable is started with the window. A
-/// proxy already answering on the port wins — two of them would write the same log.
-fn start_proxy() {
-    let port: u16 = std::env::var("GLYPHI_PROXY_PORT")
-        .ok()
-        .and_then(|value| value.parse().ok())
-        .unwrap_or(4787);
-    if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
-        return;
-    }
-    let Some(directory) = std::env::current_exe()
-        .ok()
-        .and_then(|exe| exe.parent().map(PathBuf::from))
-    else {
-        return;
-    };
-    let proxy = directory.join(if cfg!(windows) { "glyphi-proxy.exe" } else { "glyphi-proxy" });
-    if proxy.is_file() {
-        let _ = std::process::Command::new(proxy).spawn();
     }
 }
 

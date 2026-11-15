@@ -26,6 +26,11 @@ use wry::{WebView, WebViewBuilder};
 use crate::assets::{content_type, renderer_root, resolve};
 use crate::bridge::{BridgeCall, BridgeReply, EngineWorker};
 use crate::tray::{Tray, TrayCommand};
+use crate::{preferences, proxy};
+
+/// The id a refresh the shell started for itself carries, so its reply is pushed
+/// into the page as well as answered.
+const SHELL_REFRESH: &str = "shell.refresh";
 
 /// What the shell needs from the outside world.
 pub struct ShellConfig {
@@ -111,8 +116,15 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
         .with_min_inner_size(LogicalSize::new(880.0, 560.0))
         // The renderer draws the title bar; a native one on top would double it.
         .with_decorations(false)
+        // Without a decoration the mark has to come from here, or the taskbar and
+        // the Alt-Tab switcher show the shell's blank default.
+        .with_window_icon(window_icon())
         .build(&event_loop)
         .map_err(|error| error.to_string())?;
+
+    // The toll booth keeps counting while the window is hidden, so it is supervised
+    // rather than started once here.
+    proxy::keep_alive();
 
     let worker = EngineWorker::spawn(engine, {
         let proxy = proxy.clone();
@@ -124,8 +136,17 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
     // A tray that cannot be created must not take the window down with it: the menu
     // is a convenience, the dashboard is the app.
     let mut tray = Tray::new("Glyphi").ok();
+    let refresher = worker.clone();
     let webview = build_webview(&window, &config, worker, proxy.clone())?;
     let mut webview = Some(webview);
+
+    // A first paint has nothing to show until a scan has run: ask once, and the
+    // reply arrives as a pushed snapshot instead of a blank dashboard.
+    let _ = refresher.submit(BridgeCall {
+        id: SHELL_REFRESH.to_string(),
+        method: "glyphi.refreshAll".to_string(),
+        params: serde_json::json!({}),
+    });
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -140,7 +161,17 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
             }
             Event::UserEvent(ShellEvent::Reply(reply)) => {
                 if let Some(webview) = webview.as_ref() {
-                    let _ = webview.evaluate_script(&reply.to_script());
+                    let script = reply.to_script();
+                    let _ = webview.evaluate_script(&script);
+                    // The page asked for nothing, so nothing is waiting on this id:
+                    // the dashboard it carries is pushed through `onSnapshot`.
+                    if reply.id == SHELL_REFRESH {
+                        if let Some(state) = reply.result.as_ref() {
+                            let _ = webview.evaluate_script(&format!(
+                                "window.__glyphiPush && window.__glyphiPush({state});"
+                            ));
+                        }
+                    }
                 }
             }
             Event::UserEvent(ShellEvent::Command(command)) => apply(&window, command),
@@ -154,6 +185,11 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
                     Some(TrayCommand::Refresh) => {
                         // Ask the engine for a fresh snapshot; the reply repaints.
                         tray.set_tooltip("Glyphi — refreshing");
+                        let _ = refresher.submit(BridgeCall {
+                            id: SHELL_REFRESH.to_string(),
+                            method: "glyphi.refreshAll".to_string(),
+                            params: serde_json::json!({}),
+                        });
                     }
                     Some(TrayCommand::Quit) => *control_flow = ControlFlow::Exit,
                     None => {}
@@ -197,12 +233,18 @@ fn apply(window: &Window, command: WindowCommand) {
     }
 }
 
+/// The mark in the title bar and the taskbar, from the tray's own 32-pixel image.
+fn window_icon() -> Option<tao::window::Icon> {
+    tao::window::Icon::from_rgba(include_bytes!("../assets/tray-32.rgba").to_vec(), 32, 32).ok()
+}
+
 fn build_webview(
     window: &Window,
     config: &ShellConfig,
     worker: EngineWorker,
     proxy: EventLoopProxy<ShellEvent>,
 ) -> Result<WebView, String> {
+    let user_data = config.user_data.clone();
     let builder = WebViewBuilder::new()
         // The preload's replacement: same `window.glyphi`, defined before the app
         // boots so no component ever sees it missing.
@@ -219,6 +261,13 @@ fn build_webview(
                     return;
                 }
             };
+            // Preferences live in the shell: the engine has no business holding a
+            // theme, and the page must get the same shape the Electron preload gave it.
+            if call.method == "shell.preferences" {
+                let values = preferences::apply(user_data.as_deref(), &call.params);
+                let _ = proxy.send_event(ShellEvent::Reply(BridgeReply::ok(call.id, values)));
+                return;
+            }
             if let Some(command) = WindowCommand::parse(&call.method) {
                 let _ = proxy.send_event(ShellEvent::Command(command));
                 let _ = proxy.send_event(ShellEvent::Reply(BridgeReply::ok(

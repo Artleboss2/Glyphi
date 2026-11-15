@@ -10,6 +10,7 @@
 //! the engine free of anything that only exists to be drawn.
 
 use serde::Serialize;
+use serde_json::Value;
 
 use glyphi_domain::{
     Credits, ProviderError, ProviderIdentity, ProviderSource, QuotaMetric, ReadingWindow,
@@ -56,6 +57,31 @@ pub struct DashboardProvider {
     pub analytics: Option<ProviderAnalytics>,
     pub error: Option<ProviderError>,
     pub updated_at: Option<String>,
+}
+
+/// The envelope the renderer's `DashboardState` expects: the snapshot sits under
+/// `snapshot`, next to the flags the refresh screens read.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DashboardState {
+    pub revision: u64,
+    pub snapshot: DashboardSnapshot,
+    pub refreshing: bool,
+    pub progress: Option<Value>,
+    pub error: Option<String>,
+    pub local_import: Option<Value>,
+}
+
+/// Wraps a snapshot in the state the page updates from.
+pub fn state(snapshot: &Snapshot) -> DashboardState {
+    DashboardState {
+        revision: 1,
+        snapshot: from_snapshot(snapshot),
+        refreshing: false,
+        progress: None,
+        error: None,
+        local_import: None,
+    }
 }
 
 /// Builds the envelope the renderer already knows how to read.
