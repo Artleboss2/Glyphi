@@ -870,7 +870,48 @@ impl Totals {
     }
 }
 
+/// The last aggregate and the log it was built from.
+///
+/// The dashboard asks for `/__glyphi/usage` on every refresh, and the log only grows:
+/// re-reading and re-parsing every line each time turned a file read into a CPU
+/// bill. The file's size and modification time identify its content, so an unchanged
+/// log is answered from memory.
+struct AggregateCache {
+    size: u64,
+    modified: u128,
+    value: Value,
+}
+
+static CACHE: std::sync::OnceLock<std::sync::Mutex<Option<AggregateCache>>> = std::sync::OnceLock::new();
+
 fn aggregate(path: &PathBuf) -> Value {
+    let Ok(metadata) = fs::metadata(path) else {
+        return json!({ "days": [], "totals": {} });
+    };
+    let size = metadata.len();
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    let cache = CACHE.get_or_init(|| std::sync::Mutex::new(None));
+    if let Ok(stored) = cache.lock() {
+        if let Some(entry) = stored.as_ref() {
+            if entry.size == size && entry.modified == modified {
+                return entry.value.clone();
+            }
+        }
+    }
+
+    let value = aggregate_log(path);
+    if let Ok(mut stored) = cache.lock() {
+        *stored = Some(AggregateCache { size, modified, value: value.clone() });
+    }
+    value
+}
+
+fn aggregate_log(path: &PathBuf) -> Value {
     let Ok(text) = fs::read_to_string(path) else { return json!({ "days": [], "totals": {} }) };
     let mut days: BTreeMap<String, BTreeMap<String, Totals>> = BTreeMap::new();
     let mut totals: BTreeMap<String, Totals> = BTreeMap::new();
@@ -1012,6 +1053,29 @@ mod tests {
         let openai = br#"{"usage":{"prompt_tokens":1000,"completion_tokens":20,"prompt_tokens_details":{"cached_tokens":768}}}"#;
         let counts = count_tokens(b"{}", openai, Some("application/json"));
         assert_eq!((counts.input, counts.cached), (1000, 768));
+    }
+
+    #[test]
+    fn an_unchanged_log_is_not_parsed_twice_and_a_new_line_is() {
+        let directory = std::env::temp_dir().join(format!("glyphi-proxy-cache2-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let log = directory.join("proxy-usage.jsonl");
+        let _ = std::fs::remove_file(&log);
+        let counts = Counts { input: 10, cached: 0, cache_creation: 0, output: 5, messages: 1, estimated: false };
+        record(&log, "openai", &counts);
+        let first = aggregate(&log);
+        let cached = aggregate(&log);
+        assert_eq!(first, cached);
+        assert_eq!(
+            first["totals"]["openai"]["input"].as_u64(),
+            Some(10)
+        );
+
+        // A new line changes the size, so the next read sees it.
+        record(&log, "openai", &counts);
+        let second = aggregate(&log);
+        assert_eq!(second["totals"]["openai"]["input"].as_u64(), Some(20));
+        let _ = std::fs::remove_dir_all(&directory);
     }
 
     #[test]

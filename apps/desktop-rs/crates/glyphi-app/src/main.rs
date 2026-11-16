@@ -22,7 +22,25 @@ use glyphi_shell::{run, ShellConfig};
 // The proxy is started and supervised by the shell, next to the window it belongs to.
 use glyphi_store::Store;
 
+/// Renders without a GPU process.
+///
+/// The dashboard is text and thin rules: hardware compositing buys it nothing and
+/// its GPU process was measured sitting above a full core while the window was idle.
+/// These switches make the WebView raster on the CPU inside the app's own process,
+/// so there is no "GPU process" left to spin. A value already in the environment
+/// wins, which keeps a diagnostic run (`--remote-debugging-port`) possible.
+fn use_software_rendering() {
+    if std::env::var_os("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").is_some() {
+        return;
+    }
+    std::env::set_var(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        "--disable-gpu --disable-gpu-compositing --disable-direct-composition --in-process-gpu",
+    );
+}
+
 fn main() {
+    use_software_rendering();
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     // The window is the app; the other two modes exist for a terminal and for a
     // smoke test, not for users.
