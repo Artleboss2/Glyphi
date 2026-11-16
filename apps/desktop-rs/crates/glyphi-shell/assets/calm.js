@@ -27,6 +27,12 @@
     "  backdrop-filter: none !important;",
     "  -webkit-backdrop-filter: none !important;",
     "  scroll-behavior: auto !important;",
+    "}",
+    // A `fixed` background is repainted in full on every invalidation of the
+    // document, wallpaper sized. The layer behind the app is already fixed, so the
+    // attachment buys nothing and costs a full-window raster per paint.
+    "body::before {",
+    "  background-attachment: scroll !important;",
     "}"
   ].join("\n");
 

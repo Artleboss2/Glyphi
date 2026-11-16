@@ -158,6 +158,9 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
             } => {
                 // Closing hides: a tray app that quits on close cannot keep counting.
                 window.set_visible(false);
+                if let Some(webview) = webview.as_ref() {
+                    park(webview, true);
+                }
             }
             Event::UserEvent(ShellEvent::Reply(reply)) => {
                 if let Some(webview) = webview.as_ref() {
@@ -181,6 +184,9 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
                     Some(TrayCommand::ShowDashboard) | Some(TrayCommand::ShowMiniWindow) => {
                         window.set_visible(true);
                         window.set_focus();
+                        if let Some(webview) = webview.as_ref() {
+                            park(webview, false);
+                        }
                     }
                     Some(TrayCommand::Refresh) => {
                         // Ask the engine for a fresh snapshot; the reply repaints.
@@ -219,6 +225,18 @@ fn cleanup_allowed() -> bool {
         .and_then(|exe| exe.parent().map(Path::to_path_buf))
         .map(|directory| !directory.ends_with("target/release") && !directory.ends_with("target/debug"))
         .unwrap_or(false)
+}
+
+/// Tells the page whether it is on screen.
+///
+/// The stylesheet already knows how to park a hidden document (`data-window-hidden`
+/// pauses every animation), but nothing set the flag, so a window hidden in the tray
+/// kept animating — a WebView repainting forever behind the taskbar. The renderer
+/// owns the attribute; the shell only says when.
+fn park(webview: &WebView, hidden: bool) {
+    let _ = webview.evaluate_script(&format!(
+        "document.documentElement.dataset.windowHidden = \"{hidden}\";"
+    ));
 }
 
 fn apply(window: &Window, command: WindowCommand) {
