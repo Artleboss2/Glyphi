@@ -7,6 +7,7 @@
 
 pub mod assets;
 pub mod bridge;
+pub mod catalog;
 pub mod dashboard;
 pub mod legacy;
 pub mod preferences;

@@ -269,6 +269,12 @@ fn build_webview(
                 let _ = proxy.send_event(ShellEvent::Reply(BridgeReply::ok(call.id, values)));
                 return;
             }
+            // The provider directory is a file of names and a folder check, not a
+            // scan of usage: it answers here instead of waking the engine.
+            if let Some(reply) = crate::catalog::intercept(&call, user_data.as_deref()) {
+                let _ = proxy.send_event(ShellEvent::Reply(reply));
+                return;
+            }
             if let Some(command) = WindowCommand::parse(&call.method) {
                 let _ = proxy.send_event(ShellEvent::Command(command));
                 let _ = proxy.send_event(ShellEvent::Reply(BridgeReply::ok(

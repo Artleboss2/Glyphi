@@ -4,8 +4,10 @@
 //! `http://127.0.0.1:4787/p/<provider>`. Its totals are the only usage some tools
 //! will ever produce, and this adapter is the window onto `/__glyphi/usage`.
 //!
-//! Sixteen metrics is the contract, so twelve providers are named and everything
+//! Sixteen metrics is the contract, so eleven providers are named and everything
 //! past them is summed into one line: a busy machine cannot break the reading.
+//! (Four of the sixteen are the totals: through the proxy, fresh input, cached
+//! input and output.)
 
 use chrono::{DateTime, Utc};
 use glyphi_domain::{
@@ -16,7 +18,7 @@ use serde_json::Value;
 use crate::adapter::{number, Adapter, ProviderSnapshot, ScanContext, UsageEvent};
 
 pub const PROXY_ORIGIN: &str = "http://127.0.0.1:4787";
-const MAX_NAMED_PROVIDERS: usize = 12;
+const MAX_NAMED_PROVIDERS: usize = 11;
 const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(4);
 
 pub struct ProxyAdapter {
@@ -110,20 +112,17 @@ pub fn today_usage(payload: &Value, day: LocalDay) -> Vec<(String, TokenCounts)>
             continue;
         };
         for (provider, usage) in providers {
-            let input = number(usage.get("input")).unwrap_or(0.0).round() as u64;
-            let output = number(usage.get("output")).unwrap_or(0.0).round() as u64;
-            if input == 0 && output == 0 {
+            let count = |key: &str| number(usage.get(key)).unwrap_or(0.0).round() as u64;
+            let tokens = TokenCounts {
+                input_tokens: count("input"),
+                cached_input_tokens: count("cached"),
+                cache_creation_input_tokens: count("cacheCreation"),
+                output_tokens: count("output"),
+            };
+            if tokens.is_empty() {
                 continue;
             }
-            totals.push((
-                provider.clone(),
-                TokenCounts {
-                    input_tokens: input,
-                    cached_input_tokens: 0,
-                    cache_creation_input_tokens: 0,
-                    output_tokens: output,
-                },
-            ));
+            totals.push((provider.clone(), tokens));
         }
     }
     totals.sort_by(|left, right| right.1.total().cmp(&left.1.total()));
@@ -142,11 +141,14 @@ fn reading_of(payload: &Value, now: DateTime<Utc>, zone: chrono_tz::Tz) -> Provi
     }
 
     let input: u64 = usage.iter().map(|(_, tokens)| tokens.input_tokens).sum();
+    let cached: u64 = usage.iter().map(|(_, tokens)| tokens.cached_input_tokens).sum();
+    let cache_creation: u64 = usage.iter().map(|(_, tokens)| tokens.cache_creation_input_tokens).sum();
     let output: u64 = usage.iter().map(|(_, tokens)| tokens.output_tokens).sum();
 
     let mut metrics = vec![
-        QuotaMetric::new("proxy_tokens_today", "Tokens through the proxy today", QuotaUnit::Tokens, Some((input + output) as f64), None, None, None),
+        QuotaMetric::new("proxy_tokens_today", "Tokens through the proxy today", QuotaUnit::Tokens, Some((input + cached + cache_creation + output) as f64), None, None, None),
         QuotaMetric::new("proxy_input_today", "Input through the proxy today", QuotaUnit::Tokens, Some(input as f64), None, None, None),
+        QuotaMetric::new("proxy_cached_today", "Cached input through the proxy today", QuotaUnit::Tokens, Some((cached + cache_creation) as f64), None, None, None),
         QuotaMetric::new("proxy_output_today", "Output through the proxy today", QuotaUnit::Tokens, Some(output as f64), None, None, None),
     ]
     .into_iter()

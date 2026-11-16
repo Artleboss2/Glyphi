@@ -150,19 +150,19 @@
       return Promise.resolve(null);
     },
     listDiscoverableProviders: function () {
-      return Promise.resolve([]);
+      return post("glyphi.getProviderDirectory");
     },
     scanInstalledProviders: function () {
-      return Promise.resolve([]);
+      return post("glyphi.scanInstalledProviders");
     },
     getProviderDirectory: function () {
-      return Promise.resolve([]);
+      return post("glyphi.getProviderDirectory");
     },
-    discoverProvider: function () {
-      return Promise.resolve(null);
+    discoverProvider: function (name) {
+      return post("glyphi.discoverProvider", { name: String(name) });
     },
-    setProviderEnabled: function () {
-      return Promise.resolve(true);
+    setProviderEnabled: function (providerId, enabled) {
+      return post("glyphi.setProviderEnabled", { providerId: providerId, enabled: Boolean(enabled) });
     },
     setProviderCredential: function () {
       return Promise.resolve(true);

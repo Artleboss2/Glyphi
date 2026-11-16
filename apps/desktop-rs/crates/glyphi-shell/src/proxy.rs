@@ -37,8 +37,6 @@ pub fn serve_in_process() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn the_app_and_the_proxy_agree_on_the_default_port() {
         assert_eq!(glyphi_proxy::DEFAULT_PORT, 4787);

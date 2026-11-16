@@ -382,6 +382,8 @@ fn tunnel(mut client: TcpStream, target: &str, log: &PathBuf) -> std::io::Result
         &provider_for_host(&host),
         &Counts {
             input: tokens_from_chars(bytes_in),
+            cached: 0,
+            cache_creation: 0,
             output: tokens_from_chars(bytes_out),
             messages: 1,
             estimated: true,
@@ -604,6 +606,10 @@ fn respond_json(stream: &mut TcpStream, status: u16, value: &Value) -> std::io::
 
 struct Counts {
     input: u64,
+    /// Prompt tokens the provider served from its cache, billed at the cheap rate.
+    cached: u64,
+    /// Prompt tokens this request wrote into the cache, billed at a premium.
+    cache_creation: u64,
     output: u64,
     messages: u64,
     estimated: bool,
@@ -616,6 +622,8 @@ struct Counts {
 fn count_tokens(request_body: &[u8], response_body: &[u8], content_type: Option<&str>) -> Counts {
     let (messages, prompt_text) = request_shape(request_body);
     let mut input = 0u64;
+    let mut cached = 0u64;
+    let mut cache_creation = 0u64;
     let mut output = 0u64;
     let mut reported = false;
     let mut streamed = String::new();
@@ -631,19 +639,23 @@ fn count_tokens(request_body: &[u8], response_body: &[u8], content_type: Option<
                 continue;
             }
             if let Ok(value) = serde_json::from_str::<Value>(line) {
-                let (inp, outp) = usage_of(&value);
+                let usage = usage_of(&value);
                 // Anthropic reports the prompt once and the completion cumulatively.
-                input = input.max(inp);
-                output = output.max(outp);
-                reported |= inp > 0 || outp > 0;
+                input = input.max(usage.input);
+                cached = cached.max(usage.cached);
+                cache_creation = cache_creation.max(usage.cache_creation);
+                output = output.max(usage.output);
+                reported |= usage.any();
                 completion_text(&value, &mut streamed);
             }
         }
     } else if let Ok(value) = serde_json::from_str::<Value>(&response_text) {
-        let (inp, outp) = usage_of(&value);
-        input = inp;
-        output = outp;
-        reported = inp > 0 || outp > 0;
+        let usage = usage_of(&value);
+        input = usage.input;
+        cached = usage.cached;
+        cache_creation = usage.cache_creation;
+        output = usage.output;
+        reported = usage.any();
         completion_text(&value, &mut streamed);
     } else {
         // Not JSON and not SSE: a plain-text completion, or an error page.
@@ -651,11 +663,13 @@ fn count_tokens(request_body: &[u8], response_body: &[u8], content_type: Option<
     }
 
     if reported {
-        return Counts { input, output, messages, estimated: false };
+        return Counts { input, cached, cache_creation, output, messages, estimated: false };
     }
 
     Counts {
         input: tokens_from_words(word_count(&prompt_text)),
+        cached: 0,
+        cache_creation: 0,
         output: tokens_from_words(word_count(&streamed)),
         messages,
         estimated: true,
@@ -755,8 +769,25 @@ fn content_text(value: &Value, out: &mut String) {
     }
 }
 
+/// The categories a provider published. Kept apart, because a cached prompt token
+/// costs a tenth of a fresh one and a written cache token costs more than either:
+/// a total that adds them is a number no bill can be checked against.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct Usage {
+    input: u64,
+    cached: u64,
+    cache_creation: u64,
+    output: u64,
+}
+
+impl Usage {
+    fn any(&self) -> bool {
+        self.input + self.cached + self.cache_creation + self.output > 0
+    }
+}
+
 /// The token counts a provider published, in any of the shapes seen in the wild.
-fn usage_of(value: &Value) -> (u64, u64) {
+fn usage_of(value: &Value) -> Usage {
     let usage = value
         .get("usage")
         .or_else(|| value.get("usageMetadata"))
@@ -764,17 +795,28 @@ fn usage_of(value: &Value) -> (u64, u64) {
         .or_else(|| value.get("message").and_then(|inner| inner.get("usage")))
         .or_else(|| value.get("response").and_then(|inner| inner.get("usage")))
         .or_else(|| value.get("meta").and_then(|inner| inner.get("billed_units")));
-    let Some(usage) = usage else { return (0, 0) };
+    let Some(usage) = usage else { return Usage::default() };
     let take = |keys: &[&str]| -> u64 {
         keys.iter()
             .filter_map(|key| usage.get(*key).and_then(Value::as_u64))
             .max()
             .unwrap_or(0)
     };
-    let input = take(&["prompt_tokens", "input_tokens", "promptTokenCount", "prompt_eval_count", "input"])
-        + take(&["cache_read_input_tokens", "cache_creation_input_tokens"]);
-    let output = take(&["completion_tokens", "output_tokens", "candidatesTokenCount", "eval_count", "output"]);
-    (input, output)
+    // OpenAI and friends put the cache in a `details` object; DeepSeek and Gemini
+    // spell it at the top level; Anthropic splits reads from writes.
+    let details = usage
+        .get("prompt_tokens_details")
+        .or_else(|| usage.get("input_tokens_details"));
+    let detail = |key: &str| -> u64 {
+        details.and_then(|inner| inner.get(key)).and_then(Value::as_u64).unwrap_or(0)
+    };
+    Usage {
+        input: take(&["prompt_tokens", "input_tokens", "promptTokenCount", "prompt_eval_count", "input"]),
+        cached: take(&["cache_read_input_tokens", "prompt_cache_hit_tokens", "cachedContentTokenCount"])
+            .max(detail("cached_tokens")),
+        cache_creation: take(&["cache_creation_input_tokens", "prompt_cache_miss_tokens"]),
+        output: take(&["completion_tokens", "output_tokens", "candidatesTokenCount", "eval_count", "output"]),
+    }
 }
 
 fn word_count(text: &str) -> u64 {
@@ -794,6 +836,8 @@ fn record(path: &PathBuf, provider: &str, counts: &Counts) {
         "day": today(),
         "provider": provider,
         "input": counts.input,
+        "cached": counts.cached,
+        "cacheCreation": counts.cache_creation,
         "output": counts.output,
         "messages": counts.messages,
         "estimated": counts.estimated
@@ -806,6 +850,8 @@ fn record(path: &PathBuf, provider: &str, counts: &Counts) {
 #[derive(Default)]
 struct Totals {
     input: u64,
+    cached: u64,
+    cache_creation: u64,
     output: u64,
     messages: u64,
     requests: u64,
@@ -815,6 +861,8 @@ impl Totals {
     fn value(&self) -> Value {
         json!({
             "input": self.input,
+            "cached": self.cached,
+            "cacheCreation": self.cache_creation,
             "output": self.output,
             "messages": self.messages,
             "requests": self.requests
@@ -832,6 +880,8 @@ fn aggregate(path: &PathBuf) -> Value {
         let day = value.get("day").and_then(Value::as_str).unwrap_or("").to_string();
         let provider = value.get("provider").and_then(Value::as_str).unwrap_or("unknown").to_string();
         let input = value.get("input").and_then(Value::as_u64).unwrap_or(0);
+        let cached = value.get("cached").and_then(Value::as_u64).unwrap_or(0);
+        let cache_creation = value.get("cacheCreation").and_then(Value::as_u64).unwrap_or(0);
         let output = value.get("output").and_then(Value::as_u64).unwrap_or(0);
         let messages = value.get("messages").and_then(Value::as_u64).unwrap_or(0);
         for bucket in [
@@ -839,6 +889,8 @@ fn aggregate(path: &PathBuf) -> Value {
             totals.entry(provider.clone()).or_default(),
         ] {
             bucket.input += input;
+            bucket.cached += cached;
+            bucket.cache_creation += cache_creation;
             bucket.output += output;
             bucket.messages += messages;
             bucket.requests += 1;
@@ -948,6 +1000,39 @@ mod tests {
         let body = br#"{"candidates":[],"usageMetadata":{"promptTokenCount":77,"candidatesTokenCount":12}}"#;
         let counts = count_tokens(b"{}", body, Some("application/json"));
         assert_eq!((counts.input, counts.output), (77, 12));
+    }
+
+    #[test]
+    fn keeps_cached_and_fresh_prompt_tokens_apart() {
+        let anthropic = br#"{"usage":{"input_tokens":12,"cache_read_input_tokens":800,"cache_creation_input_tokens":60,"output_tokens":40}}"#;
+        let counts = count_tokens(b"{}", anthropic, Some("application/json"));
+        assert_eq!((counts.input, counts.cached, counts.cache_creation, counts.output), (12, 800, 60, 40));
+
+        // OpenAI keeps the same number one level down.
+        let openai = br#"{"usage":{"prompt_tokens":1000,"completion_tokens":20,"prompt_tokens_details":{"cached_tokens":768}}}"#;
+        let counts = count_tokens(b"{}", openai, Some("application/json"));
+        assert_eq!((counts.input, counts.cached), (1000, 768));
+    }
+
+    #[test]
+    fn the_log_keeps_the_cache_categories() {
+        let directory = std::env::temp_dir().join(format!("glyphi-proxy-cache-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let log = directory.join("proxy-usage.jsonl");
+        let _ = std::fs::remove_file(&log);
+        record(&log, "anthropic", &Counts {
+            input: 10,
+            cached: 500,
+            cache_creation: 40,
+            output: 7,
+            messages: 1,
+            estimated: false,
+        });
+        let payload = aggregate(&log);
+        let totals = payload.get("totals").and_then(|value| value.get("anthropic")).unwrap();
+        assert_eq!(totals.get("cached").and_then(Value::as_u64), Some(500));
+        assert_eq!(totals.get("cacheCreation").and_then(Value::as_u64), Some(40));
+        let _ = std::fs::remove_dir_all(&directory);
     }
 
     #[test]

@@ -1,0 +1,2102 @@
+[
+ {
+  "name": "Claude Code",
+  "aliases": [
+   "claude",
+   "anthropic cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": "claude"
+ },
+ {
+  "name": "Codex",
+  "aliases": [
+   "openai codex",
+   "codex cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": "codex"
+ },
+ {
+  "name": "Gemini CLI",
+  "aliases": [
+   "gemini"
+  ],
+  "kind": "cli-agent",
+  "adapter": "gemini"
+ },
+ {
+  "name": "Qwen Code",
+  "aliases": [
+   "qwen",
+   "qwen cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": "qwen"
+ },
+ {
+  "name": "Kimi CLI",
+  "aliases": [
+   "kimi",
+   "moonshot"
+  ],
+  "kind": "cli-agent",
+  "adapter": "kimi"
+ },
+ {
+  "name": "OpenCode",
+  "aliases": [
+   "opencode ai",
+   "sst opencode"
+  ],
+  "kind": "cli-agent",
+  "adapter": "opencode"
+ },
+ {
+  "name": "Crush",
+  "aliases": [
+   "charm crush",
+   "charmbracelet crush"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Aider",
+  "aliases": [
+   "aider chat"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Goose",
+  "aliases": [
+   "block goose"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "OpenHands",
+  "aliases": [
+   "open hands",
+   "all hands openhands"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Plandex",
+  "aliases": [
+   "plan dex"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Mentat",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Sweep",
+  "aliases": [
+   "sweep ai"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Devin",
+  "aliases": [
+   "cognition devin"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Amp",
+  "aliases": [
+   "sourcegraph amp",
+   "amp cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": "amp"
+ },
+ {
+  "name": "Factory Droid",
+  "aliases": [
+   "factory",
+   "factory ai",
+   "droid"
+  ],
+  "kind": "cli-agent",
+  "adapter": "factory"
+ },
+ {
+  "name": "Warp",
+  "aliases": [
+   "warp terminal"
+  ],
+  "kind": "cli-agent",
+  "adapter": "warp"
+ },
+ {
+  "name": "Cursor Agent",
+  "aliases": [
+   "cursor cli",
+   "cursor agent cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Copilot CLI",
+  "aliases": [
+   "github copilot cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Kilo Code",
+  "aliases": [
+   "kilo",
+   "kilocode"
+  ],
+  "kind": "cli-agent",
+  "adapter": "kilo"
+ },
+ {
+  "name": "Cline",
+  "aliases": [
+   "claude dev"
+  ],
+  "kind": "cli-agent",
+  "adapter": "cline"
+ },
+ {
+  "name": "Roo Code",
+  "aliases": [
+   "roocode",
+   "roo"
+  ],
+  "kind": "cli-agent",
+  "adapter": "roo"
+ },
+ {
+  "name": "Continue",
+  "aliases": [
+   "continue dev"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Qoder",
+  "aliases": [
+   "qoder ai",
+   "qoder cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": "qoder"
+ },
+ {
+  "name": "Muse",
+  "aliases": [
+   "muse ai"
+  ],
+  "kind": "cli-agent",
+  "adapter": "muse"
+ },
+ {
+  "name": "Pi",
+  "aliases": [
+   "pi ai",
+   "pi cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": "pi"
+ },
+ {
+  "name": "Antigravity",
+  "aliases": [
+   "google antigravity"
+  ],
+  "kind": "cli-agent",
+  "adapter": "antigravity"
+ },
+ {
+  "name": "Freebuff",
+  "aliases": [
+   "manicode",
+   "freebuff desktop"
+  ],
+  "kind": "cli-agent",
+  "adapter": "freebuff"
+ },
+ {
+  "name": "Codebuff",
+  "aliases": [
+   "codefree",
+   "codebuff cli",
+   "codefree cli"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Z.ai",
+  "aliases": [
+   "zai",
+   "glm",
+   "zhipu",
+   "bigmodel"
+  ],
+  "kind": "cli-agent",
+  "adapter": "zai"
+ },
+ {
+  "name": "Open Interpreter",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "RA.Aid",
+  "aliases": [
+   "ra aid"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "GPT Engineer",
+  "aliases": [
+   "gpt-engineer"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Smol Developer",
+  "aliases": [
+   "smol-developer"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "AutoCodeRover",
+  "aliases": [
+   "auto code rover"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "SWE-agent",
+  "aliases": [
+   "swe agent"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "MCP Agent",
+  "aliases": [
+   "mcp-agent"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Buttercup",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Tenere",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Potpie",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Codex Cloud",
+  "aliases": [
+   "openai codex cloud"
+  ],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Claude Computer Use",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "OpenAI Operator",
+  "aliases": [],
+  "kind": "cli-agent",
+  "adapter": null
+ },
+ {
+  "name": "Cursor",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": "cursor"
+ },
+ {
+  "name": "Windsurf",
+  "aliases": [
+   "codeium windsurf"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Zed",
+  "aliases": [
+   "zed ai",
+   "zed industries"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Void",
+  "aliases": [
+   "void editor"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "PearAI",
+  "aliases": [
+   "pear ai"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Trae",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Kiro",
+  "aliases": [
+   "amazon kiro"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Theia AI",
+  "aliases": [
+   "theia"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "VS Code",
+  "aliases": [
+   "visual studio code",
+   "vscode"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "GitHub Copilot",
+  "aliases": [
+   "copilot"
+  ],
+  "kind": "editor",
+  "adapter": "copilot"
+ },
+ {
+  "name": "JetBrains AI",
+  "aliases": [
+   "jetbrains ai assistant"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Junie",
+  "aliases": [
+   "jetbrains junie"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Fleet",
+  "aliases": [
+   "jetbrains fleet"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Visual Studio IntelliCode",
+  "aliases": [
+   "intellicode"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Amazon Q",
+  "aliases": [
+   "amazon q developer"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "CodeWhisperer",
+  "aliases": [
+   "aws codewhisperer"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Google Cloud Code",
+  "aliases": [
+   "cloud code"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Gemini Code Assist",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Xcode Copilot",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Android Studio Gemini",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Neovim Avante",
+  "aliases": [
+   "avante"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Tabby",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Twinny",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Supermaven",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Tabnine",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Sourcegraph Cody",
+  "aliases": [
+   "cody"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Augment Code",
+  "aliases": [
+   "augment"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Qodo",
+  "aliases": [
+   "codium"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "CodeRabbit",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Greptile",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Graphite Diamond",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Ellipsis",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Sourcery",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Codiga",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "DeepSource",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Refact",
+  "aliases": [
+   "refact ai"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Bito",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Pieces",
+  "aliases": [
+   "pieces for developers"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Aide",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Melty",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Mutable AI",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "CodeGPT",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Magic Dev",
+  "aliases": [
+   "magic ai"
+  ],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Codeium",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Eclipse Copilot",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "Rider AI",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "PyCharm AI",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "WebStorm AI",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "IntelliJ AI",
+  "aliases": [],
+  "kind": "editor",
+  "adapter": null
+ },
+ {
+  "name": "OpenAI",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Anthropic",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Google AI Studio",
+  "aliases": [
+   "google ai",
+   "ai studio"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Vertex AI",
+  "aliases": [
+   "google vertex"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Azure OpenAI",
+  "aliases": [
+   "azure ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "AWS Bedrock",
+  "aliases": [
+   "bedrock"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Mistral",
+  "aliases": [
+   "mistral ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Cohere",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "AI21 Labs",
+  "aliases": [
+   "ai21"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "xAI",
+  "aliases": [
+   "grok"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "DeepSeek",
+  "aliases": [
+   "deep seek"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Groq",
+  "aliases": [
+   "groq cloud"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Together AI",
+  "aliases": [
+   "together"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Fireworks AI",
+  "aliases": [
+   "fireworks"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "DeepInfra",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Replicate",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Hugging Face",
+  "aliases": [
+   "huggingface",
+   "hf"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Perplexity",
+  "aliases": [
+   "pplx"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Cerebras",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "SambaNova",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Nebius AI",
+  "aliases": [
+   "nebius"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Novita AI",
+  "aliases": [
+   "novita"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Baseten",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Lambda",
+  "aliases": [
+   "lambda labs"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Modal",
+  "aliases": [
+   "modal labs"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "RunPod",
+  "aliases": [
+   "runpod serverless"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Vast.ai",
+  "aliases": [
+   "vast"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Fal AI",
+  "aliases": [
+   "fal"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Hyperbolic",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "OpenRouter",
+  "aliases": [
+   "open router"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Portkey",
+  "aliases": [
+   "portkey ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "LiteLLM",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "One API",
+  "aliases": [
+   "oneapi"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "New API",
+  "aliases": [
+   "newapi"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Cloudflare Workers AI",
+  "aliases": [
+   "workers ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Cloudflare AI Gateway",
+  "aliases": [
+   "ai gateway"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Kong AI",
+  "aliases": [
+   "kong ai gateway"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Requesty",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "TrueFoundry",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Martian",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Not Diamond",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Unify AI",
+  "aliases": [
+   "unify"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Keywords AI",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "OpenPipe",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Anspire",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "AI302",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "AI360",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Aleph Alpha",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Anyscale",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Arcee",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Aya",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Baichuan",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Baidu",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "NVIDIA NIM",
+  "aliases": [
+   "nvidia"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Scaleway AI",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "OVHcloud AI",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "CoreWeave",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Crusoe Energy",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Paperspace",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Prime Intellect",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "TensorDock",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Hyperstack",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Genesis Cloud",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Nscale",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Fluidstack",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Beam Cloud",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Fly.io GPU",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "SageMaker",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Azure AI Foundry",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Vertex Model Garden",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Inference Endpoints",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Alibaba Cloud",
+  "aliases": [
+   "aliyun"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Gitee AI",
+  "aliases": [
+   "gitee"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "ModelScope",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "SiliconCloud",
+  "aliases": [
+   "siliconflow"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "PPIO",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "StepFun",
+  "aliases": [
+   "stepfun ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "MiniMax",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Tencent Hunyuan",
+  "aliases": [
+   "hunyuan"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "ByteDance Doubao",
+  "aliases": [
+   "doubao"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "iFlytek Spark",
+  "aliases": [
+   "iflytek",
+   "spark"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "SenseNova",
+  "aliases": [
+   "sensetime"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Baidu Wenxin",
+  "aliases": [
+   "wenxin",
+   "ernie"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Yi",
+  "aliases": [
+   "01.ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Upstage",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Voyage AI",
+  "aliases": [
+   "voyage"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Jina AI",
+  "aliases": [
+   "jina"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Exa",
+  "aliases": [
+   "exa ai"
+  ],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Tavily",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Firecrawl",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Unstructured",
+  "aliases": [],
+  "kind": "api",
+  "adapter": null
+ },
+ {
+  "name": "Ollama",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "LM Studio",
+  "aliases": [
+   "lmstudio"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Jan",
+  "aliases": [
+   "jan ai"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "GPT4All",
+  "aliases": [
+   "gpt 4 all"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "vLLM",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "llama.cpp",
+  "aliases": [
+   "llama cpp"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "LocalAI",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Text Generation WebUI",
+  "aliases": [
+   "oobabooga"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "KoboldCpp",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "SillyTavern",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Aphrodite",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "SGLang",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Text Generation Inference",
+  "aliases": [
+   "tgi"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "LMDeploy",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "ExLlama",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "MLX LM",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Llamafile",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Cortex",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "RamaLama",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Docker Model Runner",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Podman AI Lab",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Triton Inference",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "TorchServe",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "KServe",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "BentoML",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Ray Serve",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Open WebUI",
+  "aliases": [
+   "openwebui"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "LibreChat",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "LobeChat",
+  "aliases": [
+   "lobe chat"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "AnythingLLM",
+  "aliases": [
+   "anything llm"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Cherry Studio",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Msty",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Chatbox",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Big-AGI",
+  "aliases": [
+   "big agi"
+  ],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "NextChat",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "ChatALL",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Hollama",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "Page Assist",
+  "aliases": [],
+  "kind": "local",
+  "adapter": null
+ },
+ {
+  "name": "v0",
+  "aliases": [
+   "v0 by vercel"
+  ],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Bolt",
+  "aliases": [
+   "bolt new"
+  ],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Lovable",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Replit",
+  "aliases": [
+   "replit agent"
+  ],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Firebase Studio",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Project IDX",
+  "aliases": [
+   "idx"
+  ],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Genspark",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Same Dev",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Tempo Labs",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "WebSim",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Manus",
+  "aliases": [],
+  "kind": "builder",
+  "adapter": null
+ },
+ {
+  "name": "Langfuse",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Helicone",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Braintrust",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Arize Phoenix",
+  "aliases": [
+   "phoenix"
+  ],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Opik",
+  "aliases": [
+   "comet opik"
+  ],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "LangSmith",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "W&B Weave",
+  "aliases": [
+   "wandb weave",
+   "weights biases"
+  ],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "PromptLayer",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Humanloop",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Vellum",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Promptfoo",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "LangWatch",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Agenta",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Flowise",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Dify",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "n8n",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Activepieces",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Relevance AI",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "CrewAI",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "AutoGen",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "LangGraph",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Semantic Kernel",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Haystack",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "LlamaIndex",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "DSPy",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Instructor",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Outlines",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Guidance",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Marvin",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Mirascope",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Magentic",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Pydantic AI",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Smolagents",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "OpenAI Agents SDK",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Google ADK",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Strands Agents",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Mastra",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Vercel AI SDK",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "GenKit",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "CopilotKit",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Assistant UI",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "DeepEval",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Ragas",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Inspect AI",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "LM Eval Harness",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "HELM",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Freeplay",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Comet ML",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "MLflow",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "Neptune AI",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "ClearML",
+  "aliases": [],
+  "kind": "observability",
+  "adapter": null
+ },
+ {
+  "name": "ChatGPT",
+  "aliases": [
+   "chatgpt desktop"
+  ],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Claude Desktop",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Gemini",
+  "aliases": [
+   "gemini desktop"
+  ],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Copilot",
+  "aliases": [
+   "microsoft copilot"
+  ],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Poe",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "You.com",
+  "aliases": [
+   "you com"
+  ],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Phind",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Kagi Assistant",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Sider",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Monica",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "MaxAI",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Harpa AI",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Merlin",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Bing Copilot",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Arc Max",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Brave Leo",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Opera Aria",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Notion AI",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Obsidian Copilot",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Granola",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Otter AI",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ },
+ {
+  "name": "Fireflies AI",
+  "aliases": [],
+  "kind": "assistant",
+  "adapter": null
+ }
+]
