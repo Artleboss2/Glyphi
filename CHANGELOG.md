@@ -20,7 +20,12 @@ app; the local database schema and the cloud document format carry their own ver
 
 - **Roo Code and Cline are read from their task history.** Each task's `history_item.json`
   carries the extension's own totals — fresh input, cache reads, cache writes and output —
-  so those editors show real numbers instead of a card saying nothing can be read.
+  so those editors show real numbers instead of a card saying nothing can be read. The task's
+  mode is not stored as a model: it is not one.
+- **Gemini CLI and GitHub Copilot Chat are read too.** Gemini sessions under
+  `~/.gemini/tmp/<project>/chats` carry per-turn `tokens`, and VS Code's Copilot
+  transcripts carry a `usage` object per request; both are read as reported, with cached
+  input taken out of the input so the categories reconcile.
 - **The old history is imported.** The Electron build's `history.sqlite` becomes
   events in the ledger on start-up, and a provider with no adapter still gets a card.
 - **The update removes the Electron build.** The installer uninstalls the old app through Squirrel,

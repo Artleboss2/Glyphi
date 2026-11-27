@@ -106,13 +106,15 @@ impl RooAdapter {
         }
         bases.push(home.join("AppData").join("Roaming"));
 
-        let mut roots = Vec::new();
+        // `%APPDATA%` is usually `<home>/AppData/Roaming`, so the same storage
+        // folder can arrive twice; a set keeps a task from being counted twice.
+        let mut roots = std::collections::BTreeSet::new();
         for base in bases {
             for editor in EDITORS {
-                roots.push(base.join(editor).join("User").join("globalStorage"));
+                roots.insert(base.join(editor).join("User").join("globalStorage"));
             }
         }
-        roots
+        roots.into_iter().collect()
     }
 }
 
@@ -128,11 +130,10 @@ pub fn event_of(value: &Value, now: DateTime<Utc>) -> Option<UsageEvent> {
         return None;
     }
     let at = instant(value.get("ts")).unwrap_or(now);
-    // The task's mode ("architect", "code") is the closest thing to a model that the
-    // history keeps; the API profile names the provider when it is set.
-    let model = text(value.get("apiConfigName"))
-        .filter(|name| name != "default")
-        .unwrap_or_else(|| text(value.get("mode")).unwrap_or_else(|| "roo".to_string()));
+    // The history records no model: `mode` is how the agent works ("architect",
+    // "code") and `apiConfigName` is the name of a settings profile, so neither is
+    // stored as one. A neutral label keeps the charts honest until the model is known.
+    let model = "Roo Code".to_string();
     let mut event = UsageEvent::new("roo", "local", model, at, tokens);
     event.session = text(value.get("id"));
     event.project = text(value.get("workspace"));
@@ -172,7 +173,8 @@ mod tests {
         assert_eq!(event.tokens.cache_creation_input_tokens, 12);
         assert_eq!(event.tokens.output_tokens, 269);
         assert_eq!(event.session.as_deref(), Some("019cf211"));
-        assert_eq!(event.model, "architect");
+        // The mode is not a model and must not be stored as one.
+        assert_eq!(event.model, "Roo Code");
     }
 
     #[test]

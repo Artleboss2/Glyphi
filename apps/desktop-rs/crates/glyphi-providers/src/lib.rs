@@ -9,6 +9,8 @@ pub mod adapter;
 pub mod claude;
 pub mod codex;
 pub mod jsonl;
+pub mod copilot;
+pub mod gemini;
 pub mod roo;
 pub mod registry;
 

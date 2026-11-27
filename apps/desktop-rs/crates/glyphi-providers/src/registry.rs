@@ -6,12 +6,16 @@
 use crate::adapter::Adapter;
 use crate::claude::ClaudeAdapter;
 use crate::codex::CodexAdapter;
+use crate::copilot::CopilotAdapter;
+use crate::gemini::GeminiAdapter;
 use crate::roo::RooAdapter;
 
 pub fn all_adapters() -> Vec<Box<dyn Adapter>> {
     vec![
         Box::new(ClaudeAdapter),
         Box::new(CodexAdapter),
+        Box::new(CopilotAdapter),
+        Box::new(GeminiAdapter),
         Box::new(RooAdapter),
     ]
 }
