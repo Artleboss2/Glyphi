@@ -6,13 +6,13 @@
 use crate::adapter::Adapter;
 use crate::claude::ClaudeAdapter;
 use crate::codex::CodexAdapter;
-use crate::proxy::ProxyAdapter;
+use crate::roo::RooAdapter;
 
 pub fn all_adapters() -> Vec<Box<dyn Adapter>> {
     vec![
         Box::new(ClaudeAdapter),
         Box::new(CodexAdapter),
-        Box::new(ProxyAdapter::default()),
+        Box::new(RooAdapter),
     ]
 }
 

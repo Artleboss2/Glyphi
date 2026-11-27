@@ -10,8 +10,6 @@ authors.workspace = true
 [dependencies]
 glyphi-domain.workspace = true
 glyphi-engine.workspace = true
-# The counting proxy is a library so the app can host it in its own process.
-glyphi-proxy = { path = "../../../../crates/glyphi-proxy" }
 serde.workspace = true
 serde_json.workspace = true
 

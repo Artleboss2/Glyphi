@@ -30,18 +30,16 @@ already write, adds them up per day, and shows the result in one place — the t
 limits you have left, and what it probably cost.
 
 It is **local-first**. The engine parses files on your machine and makes no network request while it
-scans. There is no account requirement, no certificate to install and no browser extension. A small
-counting proxy ships with the app for the tools that write nothing readable — it listens on loopback,
-holds no credential and counts only what you route through it; see
-[Counting proxy](#counting-proxy).
+scans. There is no account requirement, no certificate to install and no browser extension, and it
+never proxies your traffic: a tool is counted because its own history is on disk.
 
 ## Highlights
 
 - **One page for today.** Total tokens, cost estimate and a capacity meter for every tool whose
   quota it can read.
-- **A source for the tools with no history.** A Rust counting proxy starts with the app; an agent
-  pointed at `http://127.0.0.1:4787/p/<provider>` is forwarded to the real endpoint while its tokens
-  are counted, so a tool that writes nothing readable still shows up.
+- **Editors and terminals alike.** Claude Code and Codex are read from their session files, and
+  Roo Code and Cline from the task history their extension keeps — the provider's own accounting,
+  with cached and fresh tokens kept apart.
 - **History that adds up.** Hourly, daily, weekly and per-model views, a heatmap, streaks and
   achievements, all computed from the same local ledger.
 - **A provider directory you control.** A catalog of more than 300 AI coding tools, searchable in
@@ -66,7 +64,7 @@ the summed working set and private bytes of the whole process tree:
 
 | | Electron 0.5.6 | Rust 0.6.0 |
 | --- | --- | --- |
-| Processes | 5 (+1 counting proxy) | 6 (`glyphi.exe` + 5 WebView2) |
+| Processes | 5 (+1 counting proxy) | `glyphi.exe` + WebView2 |
 | Working set | 503 MB | 339 MB |
 | Private bytes | 329 MB | 155 MB |
 | The app's own process | — | 4.1 MB private, 21 MB working set |
@@ -141,97 +139,6 @@ The full list — more than 320 tools, with what is read from each — is in
 [docs/PROVIDERS.md](docs/PROVIDERS.md). The exact locations, fields and limitations are documented in
 [docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md), [QUOTA_PROVIDERS.md](docs/QUOTA_PROVIDERS.md) and
 [DISCOVERY.md](docs/DISCOVERY.md).
-
-## Counting proxy
-
-A Rust proxy ships inside the app and starts with it. It listens on
-`127.0.0.1:4787`, forwards each request to the real provider and counts what that
-provider reports — which is how a tool that writes no readable history still shows
-up in the dashboard.
-
-Point an agent at it once, with the provider name in the path:
-
-```
-# Anything that reads an OpenAI-compatible base URL
-OPENAI_BASE_URL=http://127.0.0.1:4787/p/openai
-
-# Claude Code and the Anthropic SDK
-ANTHROPIC_BASE_URL=http://127.0.0.1:4787/p/anthropic
-
-# A local runtime
-OPENAI_BASE_URL=http://127.0.0.1:4787/p/ollama
-```
-
-85 names are known out of the box (`openai`, `anthropic`, `google`, `mistral`,
-`groq`, `deepseek`, `xai`, `together`, `openrouter`, `cerebras`, `freebuff`,
-`ollama`, `lmstudio`, `vllm`, `localai`, `jan`, `koboldcpp`, `tabby`, `litellm`…),
-but a name is only a shortcut. Any endpoint works, three ways:
-
-```
-# 1. the host itself, no configuration at all
-http://127.0.0.1:4787/p/api.example.com/v1/chat/completions
-
-# 2. the upstream passed with the request
-http://127.0.0.1:4787/p/my-gateway/v1/chat/completions?upstream=https://gateway.example.com/v1
-
-# 3. or declared once in a providers.json next to the binary
-{ "my-gateway": "https://gateway.example.com/v1" }
-```
-
-| Route | Answers |
-| --- | --- |
-| `GET /__glyphi/health` | `{ ok, providers }` |
-| `GET /__glyphi/usage` | per-day, per-provider totals |
-| `GET /__glyphi/providers` | the names it knows |
-| `ANY /p/<provider>/<path>` | the forwarded request |
-
-Counting has three layers: the `usage` block a provider reports, the same block
-inside a server-sent stream (OpenAI's final chunk, Anthropic's `message_start` /
-`message_delta`, Gemini's `usageMetadata`), and — when nothing is reported at all —
-the real text of the prompt and the answer, plus how many messages the request
-carried. Estimated rows say so; the JSON envelope is never counted, so ids and
-model names cannot inflate a number.
-
-Glyphi reads `/__glyphi/usage` on every refresh and shows the proxy as its own
-source: today's input, output and a line per provider, the twelve busiest named
-and the rest summed into one line so the sixteen-metric contract always holds.
-
-### The toll booth: counting an agent you cannot reconfigure
-
-Some clients — the Freebuff desktop app among them — offer no base URL to change,
-and redirecting them would mean terminating their TLS, which needs a root
-certificate on your machine. The proxy does not do that. It counts what passes
-instead: point the environment or the system proxy at `127.0.0.1:4787` and every
-`CONNECT host:port` becomes a measured tunnel.
-
-```
-# Windows, for the tools launched from this shell from now on
-setx HTTPS_PROXY http://127.0.0.1:4787
-setx HTTP_PROXY  http://127.0.0.1:4787
-
-# macOS / Linux
-export HTTPS_PROXY=http://127.0.0.1:4787
-```
-
-Windows Settings → Network → Proxy does the same for applications that read the
-system proxy. Either way, what is counted is bytes: what the agent sent is the
-prompt, what the provider returned is the completion, converted at four characters
-to a token. Those lines are marked `estimated`, because a tunnel hides its text.
-One tunnel is recorded as one message. The host decides the name on the dashboard
-(`api.anthropic.com` → anthropic, `api.codebuff.com` → freebuff, anything else keeps
-its own domain), so a gateway you never configured still gets its own line.
-
-The proxy still holds no credential and keeps no database: it writes one JSON line
-per request or tunnel to `proxy-usage.jsonl`. `GLYPHI_PROXY_PORT` moves the port,
-`GLYPHI_PROXY_LOG` moves the log.
-
-It runs **inside Glyphi's own process**, on a thread of its own. There is no second
-program to install or watch: closing the window leaves it counting, and ending
-Glyphi in Task Manager takes it down with everything else. The `glyphi-proxy`
-binary still exists for a terminal, and serves the same code from the same library.
-
-Because the proxy is the app, it is only there while the app is: if another tool is
-routed through `127.0.0.1:4787`, quitting Glyphi takes its network with it.
 
 ## Privacy
 

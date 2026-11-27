@@ -72,7 +72,6 @@ fn display_name(id: &str) -> String {
         "codex" => "Codex".to_string(),
         "cline" => "Cline".to_string(),
         "claude" => "Claude".to_string(),
-        "proxy" => "Counting proxy".to_string(),
         other => {
             let mut chars = other.chars();
             match chars.next() {

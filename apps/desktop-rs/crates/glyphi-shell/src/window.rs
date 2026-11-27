@@ -26,7 +26,7 @@ use wry::{WebView, WebViewBuilder};
 use crate::assets::{content_type, renderer_root, resolve};
 use crate::bridge::{BridgeCall, BridgeReply, EngineWorker};
 use crate::tray::{Tray, TrayCommand};
-use crate::{preferences, proxy};
+use crate::preferences;
 
 /// The id a refresh the shell started for itself carries, so its reply is pushed
 /// into the page as well as answered.
@@ -121,10 +121,6 @@ pub fn run(config: ShellConfig, engine: Engine) -> Result<(), String> {
         .with_window_icon(window_icon())
         .build(&event_loop)
         .map_err(|error| error.to_string())?;
-
-    // The toll booth lives in this process: it keeps counting while the window is
-    // hidden, and it goes away with the app rather than outliving it.
-    proxy::serve_in_process();
 
     let worker = EngineWorker::spawn(engine, {
         let proxy = proxy.clone();

@@ -11,7 +11,6 @@ pub mod catalog;
 pub mod dashboard;
 pub mod legacy;
 pub mod preferences;
-pub mod proxy;
 pub mod tray;
 pub mod window;
 

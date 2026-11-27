@@ -17,7 +17,6 @@ $ErrorActionPreference = "Stop"
 
 Get-Process glyphi -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$InstallDirectory*" } |
     Stop-Process -Force -ErrorAction SilentlyContinue
-Get-Process glyphi-proxy -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 600
 
 foreach ($shortcut in @(

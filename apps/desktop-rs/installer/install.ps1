@@ -40,7 +40,6 @@ if (Test-Path $updateExe) {
     # Squirrel removes shortcuts and the Apps & Features entry; it can refuse while
     # the app is running, which is why the process is stopped first.
     Get-Process Glyphi -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Get-Process glyphi-proxy -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 800
     try { & $updateExe --uninstall --silent } catch { Write-Warning "The old uninstaller said: $_" }
     Start-Sleep -Milliseconds 800

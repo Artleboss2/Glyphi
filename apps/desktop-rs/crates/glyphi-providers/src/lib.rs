@@ -9,7 +9,7 @@ pub mod adapter;
 pub mod claude;
 pub mod codex;
 pub mod jsonl;
-pub mod proxy;
+pub mod roo;
 pub mod registry;
 
 pub use adapter::{Adapter, Credential, CredentialStore, ScanContext, UsageEvent};

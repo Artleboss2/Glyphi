@@ -18,19 +18,9 @@ app; the local database schema and the cloud document format carry their own ver
 
 ### Added
 
-- **The counting proxy is a toll booth.** An agent that cannot be pointed at
-  `127.0.0.1:4787/p/<provider>` can still be counted: a `CONNECT host:port` becomes a
-  measured tunnel, the bytes the agent sent are the prompt and the bytes the provider
-  returned are the completion, converted at four characters to a token. Nothing is
-  decrypted, those rows say `estimated`, and the host decides which provider the line
-  belongs to. Point `HTTPS_PROXY` or the system proxy at the app to use it.
-- **The proxy is part of the app.** The listener runs on a thread of `glyphi.exe`:
-  closing the window keeps it counting, and ending the process in Task Manager takes
-  it down with the app. `glyphi-proxy` remains available as a standalone binary built
-  from the same library.
-- **The window stops paying for motion.** A permanently animated, blurred page kept
-  the WebView's GPU process above a full core while the dashboard was idle. The shell
-  now runs animations once and drops `backdrop-filter`, without touching the renderer.
+- **Roo Code and Cline are read from their task history.** Each task's `history_item.json`
+  carries the extension's own totals — fresh input, cache reads, cache writes and output —
+  so those editors show real numbers instead of a card saying nothing can be read.
 - **The old history is imported.** The Electron build's `history.sqlite` becomes
   events in the ledger on start-up, and a provider with no adapter still gets a card.
 - **The update removes the Electron build.** The installer uninstalls the old app through Squirrel,
@@ -39,6 +29,12 @@ app; the local database schema and the cloud document format carry their own ver
   are kept; only caches are removed.
 - **The app cleans up after the old build on first launch too**, so a portable copy or a manual
   install ends up in the same state: one app on disk, one history.
+
+### Removed
+
+- **The counting proxy.** It counted a handful of requests and nothing of the traffic that
+  never reached it, which made the dashboard quietly wrong. Providers are read from the
+  history their own tools write; nothing intercepts traffic any more.
 
 ## 0.5.3 — 2026-11-12
 

@@ -19,7 +19,6 @@ use std::path::PathBuf;
 use glyphi_engine::{Engine, EngineMessage, EngineRequest, EngineResponse, EngineSettings};
 use glyphi_providers::all_adapters;
 use glyphi_shell::{run, ShellConfig};
-// The proxy is started and supervised by the shell, next to the window it belongs to.
 use glyphi_store::Store;
 
 /// Renders without a GPU process.
