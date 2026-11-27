@@ -144,6 +144,10 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    # No checkout here — only the downloaded artifact. `gh` needs to be told which
+    # repository it is working on, or it fails with "not a git repository".
+    env:
+      GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/download-artifact@v4
         with:
